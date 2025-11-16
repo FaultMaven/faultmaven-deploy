@@ -1,0 +1,146 @@
+version: '3.8'
+
+services:
+  # Infrastructure Services
+  redis:
+    image: redis:7-alpine
+    container_name: faultmaven-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # FaultMaven Microservices
+  auth-service:
+    image: faultmaven/fm-auth-service:latest
+    container_name: faultmaven-auth
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=sqlite+aiosqlite:////data/fm_auth.db
+    volumes:
+      - auth-data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8001/health', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  session-service:
+    image: faultmaven/fm-session-service:latest
+    container_name: faultmaven-session
+    ports:
+      - "8002:8002"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8002/health', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  case-service:
+    image: faultmaven/fm-case-service:latest
+    container_name: faultmaven-case
+    ports:
+      - "8003:8003"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////data/fm_cases.db
+    volumes:
+      - case-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8003/health', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  knowledge-service:
+    image: faultmaven/fm-knowledge-service:latest
+    container_name: faultmaven-knowledge
+    ports:
+      - "8004:8004"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////data/sqlite/fm_knowledge.db
+      - CHROMADB_PATH=/data/chromadb
+    volumes:
+      - knowledge-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8004/health', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  evidence-service:
+    image: faultmaven/fm-evidence-service:latest
+    container_name: faultmaven-evidence
+    ports:
+      - "8005:8005"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////data/uploads/fm_evidence.db
+      - UPLOAD_DIR=/data/uploads
+    volumes:
+      - evidence-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8005/health', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  api-gateway:
+    image: faultmaven/fm-api-gateway:latest
+    container_name: faultmaven-gateway
+    ports:
+      - "8090:8090"
+    environment:
+      - AUTH_PROVIDER=fm-auth
+      - FM_AUTH_URL=http://auth-service:8001
+      - SESSION_SERVICE_URL=http://session-service:8002
+      - CASE_SERVICE_URL=http://case-service:8003
+      - KNOWLEDGE_SERVICE_URL=http://knowledge-service:8004
+      - EVIDENCE_SERVICE_URL=http://evidence-service:8005
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      session-service:
+        condition: service_healthy
+      case-service:
+        condition: service_healthy
+      knowledge-service:
+        condition: service_healthy
+      evidence-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8090/health', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  redis-data:
+  auth-data:
+  case-data:
+  knowledge-data:
+  evidence-data:
+
+networks:
+  default:
+    name: faultmaven-network
