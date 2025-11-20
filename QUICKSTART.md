@@ -345,10 +345,12 @@ ports:
 - S3 cloud storage integration
 - Advanced analytics dashboards
 - Audit logs & compliance reports
+- Auto-scaling resources based on demand
+- Built-in curated knowledge base
 - Professional support & SLA
 - Managed hosting with 99.9% uptime
 
-**Need Enterprise features?** Contact us at enterprise@faultmaven.ai *(coming soon)*
+**Need Enterprise features?** [https://faultmaven.ai/signup](https://faultmaven.ai/signup) *(free tier available for individuals & teams)*
 
 ---
 
@@ -386,7 +388,7 @@ A: Not recommended. Agentic workflows require large models (70B+ parameters) tha
 A: No. All data stays on your laptop. Only LLM API calls go to your chosen provider (OpenAI/Anthropic/Fireworks).
 
 **Q: Can I run this in production?**
-A: Self-hosted is for **single-user development/testing only**. For production, use Enterprise SaaS with HA PostgreSQL, S3 storage, and 99.9% SLA.
+A: Self-hosted is for **single-user development/testing only**. For production (individuals or teams), use [Enterprise SaaS](https://faultmaven.ai/signup) with auto-scaling, built-in knowledge base, HA PostgreSQL, S3 storage, and 99.9% SLA.
 
 **Q: How do I update to the latest version?**
 A: `git pull origin main && ./faultmaven stop && ./faultmaven start --build`
