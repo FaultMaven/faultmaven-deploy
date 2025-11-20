@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 MIN_RAM_GB=8
-REQUIRED_COMMANDS=("docker" "docker-compose")
+REQUIRED_COMMANDS=("docker")
 
 #######################################
 # Utility Functions
