@@ -321,6 +321,144 @@ cmd_logs() {
     fi
 }
 
+cmd_kill() {
+    print_header
+    echo "Force-killing all FaultMaven containers..."
+    echo ""
+
+    # Get all FaultMaven-related container IDs
+    local containers=$(docker ps -a --filter "label=com.docker.compose.project=faultmaven-deploy" --format "{{.ID}}" 2>/dev/null)
+
+    if [ -z "$containers" ]; then
+        containers=$(docker ps -a --filter "name=faultmaven" --format "{{.ID}}" 2>/dev/null)
+    fi
+
+    if [ -n "$containers" ]; then
+        print_info "Killing containers..."
+        echo "$containers" | xargs docker kill 2>/dev/null || true
+
+        print_info "Removing containers..."
+        echo "$containers" | xargs docker rm -f 2>/dev/null || true
+
+        print_success "All FaultMaven containers killed and removed"
+    else
+        print_info "No FaultMaven containers found"
+    fi
+
+    # Also try compose down just to be sure
+    docker compose down 2>/dev/null || true
+
+    echo ""
+    print_info "Data preserved in ./data directory"
+    print_info "Run './faultmaven start' to restart"
+}
+
+cmd_prune() {
+    print_header
+    print_warning "This will remove:"
+    echo "  - All stopped FaultMaven containers"
+    echo "  - All orphaned containers (detached from compose)"
+    echo "  - All dangling/unused FaultMaven images"
+    echo "  - All unused Docker networks"
+    echo "  - All build cache (speeds up future builds)"
+    echo ""
+    echo "Data in ./data directory will be preserved"
+    echo ""
+    read -p "Continue? (y/N) " -n 1 -r
+    echo ""
+
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo ""
+
+        # Stop and remove all containers
+        print_info "Removing containers..."
+        docker compose down --remove-orphans 2>/dev/null || true
+
+        # Remove FaultMaven images
+        print_info "Removing FaultMaven images..."
+        docker images --filter "reference=faultmaven-deploy-*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
+        docker images --filter "reference=faultmaven/*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
+
+        # Remove dangling images
+        print_info "Removing dangling images..."
+        docker image prune -f 2>/dev/null || true
+
+        # Remove unused networks
+        print_info "Removing unused networks..."
+        docker network prune -f 2>/dev/null || true
+
+        # Remove build cache
+        print_info "Removing build cache..."
+        docker builder prune -f 2>/dev/null || true
+
+        print_success "Docker cleanup complete"
+        echo ""
+
+        # Show space reclaimed
+        print_info "Checking disk space..."
+        docker system df
+
+        echo ""
+        print_info "Data preserved in ./data directory"
+        print_info "Run './faultmaven start' to rebuild and restart"
+    else
+        print_info "Prune cancelled"
+    fi
+}
+
+cmd_nuke() {
+    print_header
+    print_warning "⚠️  NUCLEAR OPTION - This will:"
+    echo "  - Kill all FaultMaven containers"
+    echo "  - Remove all FaultMaven images and volumes"
+    echo "  - Remove ALL Docker build cache (affects other projects!)"
+    echo "  - Remove ALL unused Docker resources system-wide"
+    echo "  - DELETE ./data directory (all cases, evidence, knowledge base)"
+    echo ""
+    print_error "This is destructive and affects your entire Docker installation!"
+    echo ""
+    read -p "Are you ABSOLUTELY sure? Type 'NUKE' to confirm: " confirm
+
+    if [ "$confirm" = "NUKE" ]; then
+        echo ""
+
+        # Kill all FaultMaven containers
+        print_info "Killing all FaultMaven containers..."
+        docker compose down -v --remove-orphans 2>/dev/null || true
+        docker ps -a --filter "name=faultmaven" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+
+        # Remove all FaultMaven images
+        print_info "Removing all FaultMaven images..."
+        docker images --filter "reference=faultmaven*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
+
+        # Remove data directory
+        if [ -d ./data ]; then
+            print_info "Removing data directory..."
+            rm -rf ./data
+        fi
+
+        # Remove override file
+        if [ -f docker-compose.override.yml ]; then
+            print_info "Removing docker-compose.override.yml..."
+            rm -f docker-compose.override.yml
+        fi
+
+        # System-wide Docker cleanup (AGGRESSIVE)
+        print_warning "Running system-wide Docker cleanup..."
+        docker system prune -a -f --volumes 2>/dev/null || true
+
+        print_success "Nuclear cleanup complete - FaultMaven obliterated"
+        echo ""
+        print_info "Disk space reclaimed:"
+        docker system df
+        echo ""
+        print_warning "You'll need to rebuild everything with './faultmaven start'"
+        print_warning "First build will take 10-15 minutes (no cache)"
+    else
+        print_info "Nuke cancelled - phew!"
+    fi
+}
+
 cmd_clean() {
     print_header
     print_warning "This will PERMANENTLY DELETE all data including:"
@@ -328,6 +466,8 @@ cmd_clean() {
     echo "  - All uploaded evidence files"
     echo "  - All knowledge base documents"
     echo "  - SQLite database"
+    echo ""
+    echo "Docker images and containers will be preserved (use 'prune' to remove)"
     echo ""
     read -p "Are you sure? Type 'DELETE' to confirm: " confirm
 
@@ -341,8 +481,9 @@ cmd_clean() {
             rm -rf ./data
         fi
 
-        print_success "FaultMaven has been reset to factory defaults"
+        print_success "FaultMaven data has been deleted"
         echo ""
+        print_info "Docker images preserved - restart will be fast"
         print_info "Run './faultmaven start' to start fresh"
     else
         print_info "Clean cancelled"
@@ -353,19 +494,34 @@ cmd_help() {
     print_header
     echo "Usage: ./faultmaven [command]"
     echo ""
-    echo "Commands:"
+    echo "Service Management:"
     echo "  start     Start all FaultMaven services (with pre-flight checks)"
-    echo "  stop      Stop all services (preserves data)"
+    echo "  stop      Stop all services (preserves data and images)"
     echo "  status    Show service status and health checks"
     echo "  logs      Stream logs from all services"
     echo "  logs <service>  Stream logs from specific service"
-    echo "  clean     DANGER: Delete all data and reset to factory defaults"
+    echo ""
+    echo "Cleanup Commands (in order of severity):"
+    echo "  clean     Delete data only (preserves Docker images for fast restart)"
+    echo "  kill      Force-kill all containers (preserves data and images)"
+    echo "  prune     Remove containers + images + build cache (preserves data)"
+    echo "  nuke      ☢️  NUCLEAR: Delete everything including system-wide Docker cache"
+    echo ""
+    echo "Other:"
     echo "  help      Show this help message"
     echo ""
     echo "Examples:"
-    echo "  ./faultmaven start"
-    echo "  ./faultmaven logs fm-agent-service"
-    echo "  ./faultmaven status"
+    echo "  ./faultmaven start           # Start with pre-flight checks"
+    echo "  ./faultmaven status          # Check health of all services"
+    echo "  ./faultmaven logs fm-agent-service  # View agent service logs"
+    echo "  ./faultmaven kill            # Emergency shutdown"
+    echo "  ./faultmaven prune           # Free up disk space"
+    echo ""
+    echo "Cleanup Decision Guide:"
+    echo "  - Misbehaving service?       → ./faultmaven kill"
+    echo "  - Want fresh data?           → ./faultmaven clean"
+    echo "  - Low on disk space?         → ./faultmaven prune"
+    echo "  - Total rebuild needed?      → ./faultmaven nuke"
     echo ""
 }
 
@@ -385,6 +541,15 @@ case "${1:-}" in
         ;;
     logs)
         cmd_logs "$2"
+        ;;
+    kill)
+        cmd_kill
+        ;;
+    prune)
+        cmd_prune
+        ;;
+    nuke)
+        cmd_nuke
         ;;
     clean)
         cmd_clean
