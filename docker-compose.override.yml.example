@@ -10,86 +10,83 @@
 #   - Keeps your laptop usable during troubleshooting sessions
 #   - Ensures predictable performance on 8GB RAM systems
 #
+# TECHNICAL DETAILS:
+#   - mem_limit: Hard cap enforced by Docker (OOM kill if exceeded)
+#   - mem_reservation: Soft limit (guaranteed minimum allocation)
+#   - cpus: Maximum CPU cores (throttled if exceeded, not killed)
+#
 # CUSTOMIZATION:
 #   Increase limits if you have 16GB+ RAM:
-#     cpus: '2.0'      # Use 2 CPU cores instead of 1
-#     memory: 4G       # Use 4GB instead of 2GB
+#     mem_limit: 4096m     # 4GB instead of 1.5GB
+#     cpus: 2.0            # 2 CPU cores instead of 1
 
 services:
   # AI Agent Service - Most memory-intensive (LangGraph + LLM calls)
   fm-agent-service:
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'          # Max 1 CPU core
-          memory: 1.5G         # Max 1.5GB RAM
-        reservations:
-          memory: 512M         # Guarantee 512MB minimum
+    mem_limit: 1536m        # Hard limit: 1.5GB RAM (OOM kill at 100%)
+    mem_reservation: 512m   # Soft limit: 512MB guaranteed minimum
+    cpus: 1.0               # Max 1 CPU core (throttled if exceeded)
 
   # Knowledge Service - Vector DB + embeddings
   fm-knowledge-service:
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 2G           # Larger for ChromaDB operations
-        reservations:
-          memory: 1G
+    mem_limit: 2048m        # Hard limit: 2GB RAM (larger for ChromaDB operations)
+    mem_reservation: 1024m  # Soft limit: 1GB guaranteed minimum
+    cpus: 1.0               # Max 1 CPU core
 
   # ChromaDB - Vector database
   chromadb:
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 1G
-        reservations:
-          memory: 512M
+    mem_limit: 1024m        # Hard limit: 1GB RAM
+    mem_reservation: 512m   # Soft limit: 512MB guaranteed minimum
+    cpus: 0.5               # Max 0.5 CPU cores
 
   # Redis - Session store (lightweight)
   redis:
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 512M
-        reservations:
-          memory: 256M
+    mem_limit: 512m         # Hard limit: 512MB RAM
+    mem_reservation: 256m   # Soft limit: 256MB guaranteed minimum
+    cpus: 0.25              # Max 0.25 CPU cores
 
-  # Other services use default Docker limits (typically sufficient)
-  # Uncomment and adjust if needed:
+  # Other services use default Docker limits (typically 256-512MB)
+  # Uncomment and adjust if you need stricter limits:
 
   # fm-case-service:
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '0.5'
-  #         memory: 512M
+  #   mem_limit: 512m
+  #   mem_reservation: 256m
+  #   cpus: 0.5
 
   # fm-auth-service:
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '0.5'
-  #         memory: 512M
+  #   mem_limit: 512m
+  #   mem_reservation: 256m
+  #   cpus: 0.5
 
   # fm-session-service:
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '0.5'
-  #         memory: 512M
+  #   mem_limit: 512m
+  #   mem_reservation: 256m
+  #   cpus: 0.5
 
   # fm-evidence-service:
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '0.5'
-  #         memory: 512M
+  #   mem_limit: 512m
+  #   mem_reservation: 256m
+  #   cpus: 0.5
 
   # fm-job-worker:
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '0.5'
-  #         memory: 512M
+  #   mem_limit: 512m
+  #   mem_reservation: 256m
+  #   cpus: 0.5
+
+# WHAT HAPPENS WHEN LIMITS ARE EXCEEDED:
+#
+# Memory (mem_limit):
+#   90-95%: Container slows down, garbage collection thrashes
+#   100%:   Docker OOM Killer terminates the container
+#   Result: Container automatically restarts (unless --no-restart)
+#   Impact: Current request fails, 10-30 second recovery time
+#
+# CPU (cpus):
+#   100%:   Process gets throttled (paused periodically)
+#   Result: Container keeps running but slower
+#   Impact: Requests take longer but don't fail
+#
+# MONITORING:
+#   Check resource usage: docker stats
+#   Check if OOM killed:   docker inspect <container> | grep OOMKilled
+#   View restart count:    docker ps (RESTART column)
