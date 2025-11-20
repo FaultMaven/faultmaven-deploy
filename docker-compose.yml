@@ -34,7 +34,7 @@ services:
   # Core microservices
   fm-auth-service:
     build:
-      context: ./fm-auth-service
+      context: ../fm-auth-service
       dockerfile: Dockerfile
     container_name: fm-auth-service
     ports:
@@ -58,7 +58,7 @@ services:
 
   fm-session-service:
     build:
-      context: ./fm-session-service
+      context: ../fm-session-service
       dockerfile: Dockerfile
     container_name: fm-session-service
     ports:
@@ -79,7 +79,7 @@ services:
 
   fm-case-service:
     build:
-      context: ./fm-case-service
+      context: ../fm-case-service
       dockerfile: Dockerfile
     container_name: fm-case-service
     ports:
@@ -103,7 +103,7 @@ services:
 
   fm-knowledge-service:
     build:
-      context: ./fm-knowledge-service
+      context: ../fm-knowledge-service
       dockerfile: Dockerfile
     container_name: fm-knowledge-service
     ports:
@@ -127,7 +127,7 @@ services:
 
   fm-evidence-service:
     build:
-      context: ./fm-evidence-service
+      context: ../fm-evidence-service
       dockerfile: Dockerfile
     container_name: fm-evidence-service
     ports:
@@ -148,7 +148,7 @@ services:
 
   fm-agent-service:
     build:
-      context: ./fm-agent-service
+      context: ../fm-agent-service
       dockerfile: Dockerfile
     container_name: fm-agent-service
     ports:
@@ -178,7 +178,7 @@ services:
   # Job processing
   fm-job-worker:
     build:
-      context: ./fm-job-worker
+      context: ../fm-job-worker
       dockerfile: Dockerfile
     container_name: fm-job-worker
     environment:
@@ -192,7 +192,7 @@ services:
 
   fm-job-worker-beat:
     build:
-      context: ./fm-job-worker
+      context: ../fm-job-worker
       dockerfile: Dockerfile.beat
     container_name: fm-job-worker-beat
     environment:
