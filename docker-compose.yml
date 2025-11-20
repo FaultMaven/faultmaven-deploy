@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Infrastructure Services
+  # Infrastructure services
   redis:
     image: redis:7-alpine
     container_name: faultmaven-redis
@@ -9,118 +9,220 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 3s
-      retries: 3
+      timeout: 5s
+      retries: 5
 
-  # FaultMaven Microservices
-  auth-service:
-    image: faultmaven/fm-auth-service:latest
-    container_name: faultmaven-auth
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: faultmaven-chromadb
     ports:
-      - "8001:8001"
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=sqlite+aiosqlite:////data/fm_auth.db
+      - "8000:8000"
     volumes:
-      - auth-data:/data
+      - chromadb-data:/chroma/chroma
+    environment:
+      - ANONYMIZED_TELEMETRY=False
+      - ALLOW_RESET=True
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Core microservices
+  fm-auth-service:
+    build:
+      context: ./fm-auth-service
+      dockerfile: Dockerfile
+    container_name: fm-auth-service
+    ports:
+      - "8001:8000"
+    environment:
+      - PROFILE=public
+      - DB_TYPE=sqlite
+      - DATABASE_URL=sqlite+aiosqlite:////data/faultmaven.db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./data:/data
     depends_on:
       redis:
         condition: service_healthy
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8001/health', timeout=2)"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
-      timeout: 3s
+      timeout: 10s
       retries: 3
 
-  session-service:
-    image: faultmaven/fm-session-service:latest
-    container_name: faultmaven-session
+  fm-session-service:
+    build:
+      context: ./fm-session-service
+      dockerfile: Dockerfile
+    container_name: fm-session-service
     ports:
-      - "8002:8002"
+      - "8002:8000"
     environment:
+      - PROFILE=public
+      - DB_TYPE=sqlite
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     depends_on:
       redis:
         condition: service_healthy
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8002/health', timeout=2)"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
-      timeout: 3s
+      timeout: 10s
       retries: 3
 
-  case-service:
-    image: faultmaven/fm-case-service:latest
-    container_name: faultmaven-case
+  fm-case-service:
+    build:
+      context: ./fm-case-service
+      dockerfile: Dockerfile
+    container_name: fm-case-service
     ports:
-      - "8003:8003"
+      - "8003:8000"
     environment:
-      - DATABASE_URL=sqlite+aiosqlite:////data/fm_cases.db
+      - PROFILE=public
+      - DB_TYPE=sqlite
+      - DATABASE_URL=sqlite+aiosqlite:////data/faultmaven.db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
-      - case-data:/data
-    restart: unless-stopped
-
-  knowledge-service:
-    image: faultmaven/fm-knowledge-service:latest
-    container_name: faultmaven-knowledge
-    ports:
-      - "8004:8004"
-    environment:
-      - DATABASE_URL=sqlite+aiosqlite:////data/sqlite/fm_knowledge.db
-      - CHROMADB_PATH=/data/chromadb
-    volumes:
-      - knowledge-data:/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8004/health', timeout=2)"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-
-  evidence-service:
-    image: faultmaven/fm-evidence-service:latest
-    container_name: faultmaven-evidence
-    ports:
-      - "8005:8005"
-    environment:
-      - DATABASE_URL=sqlite+aiosqlite:////data/uploads/fm_evidence.db
-      - UPLOAD_DIR=/data/uploads
-    volumes:
-      - evidence-data:/data
-    restart: unless-stopped
-
-  api-gateway:
-    image: faultmaven/fm-api-gateway:latest
-    container_name: faultmaven-gateway
-    ports:
-      - "8090:8090"
-    environment:
-      - AUTH_PROVIDER=fm-auth
-      - FM_AUTH_URL=http://auth-service:8001
-      - SESSION_SERVICE_URL=http://session-service:8002
-      - CASE_SERVICE_URL=http://case-service:8003
-      - KNOWLEDGE_SERVICE_URL=http://knowledge-service:8004
-      - EVIDENCE_SERVICE_URL=http://evidence-service:8005
+      - ./data:/data
     depends_on:
-      - auth-service
-      - session-service
-      - case-service
-      - knowledge-service
-      - evidence-service
-    restart: unless-stopped
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  fm-knowledge-service:
+    build:
+      context: ./fm-knowledge-service
+      dockerfile: Dockerfile
+    container_name: fm-knowledge-service
+    ports:
+      - "8004:8000"
+    environment:
+      - PROFILE=public
+      - DB_TYPE=sqlite
+      - DATABASE_URL=sqlite+aiosqlite:////data/faultmaven.db
+      - CHROMADB_HOST=chromadb
+      - CHROMADB_PORT=8000
+    volumes:
+      - ./data:/data
+    depends_on:
+      chromadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  fm-evidence-service:
+    build:
+      context: ./fm-evidence-service
+      dockerfile: Dockerfile
+    container_name: fm-evidence-service
+    ports:
+      - "8005:8000"
+    environment:
+      - PROFILE=public
+      - DB_TYPE=sqlite
+      - DATABASE_URL=sqlite+aiosqlite:////data/faultmaven.db
+      - STORAGE_TYPE=local
+      - LOCAL_UPLOAD_DIR=/data/uploads
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  fm-agent-service:
+    build:
+      context: ./fm-agent-service
+      dockerfile: Dockerfile
+    container_name: fm-agent-service
+    ports:
+      - "8006:8000"
+    environment:
+      - PROFILE=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KNOWLEDGE_SERVICE_URL=http://fm-knowledge-service:8000
+      - CASE_SERVICE_URL=http://fm-case-service:8000
+      - EVIDENCE_SERVICE_URL=http://fm-evidence-service:8000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - FIREWORKS_API_KEY=${FIREWORKS_API_KEY}
+    volumes:
+      - ./data:/data
+    depends_on:
+      - redis
+      - fm-knowledge-service
+      - fm-case-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Job processing
+  fm-job-worker:
+    build:
+      context: ./fm-job-worker
+      dockerfile: Dockerfile
+    container_name: fm-job-worker
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["celery", "-A", "job_worker.celery_app", "worker", "--loglevel=info", "--concurrency=4"]
+
+  fm-job-worker-beat:
+    build:
+      context: ./fm-job-worker
+      dockerfile: Dockerfile.beat
+    container_name: fm-job-worker-beat
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["celery", "-A", "job_worker.celery_app", "beat", "--loglevel=info"]
+
+  # API Gateway (optional - for future use)
+  # fm-api-gateway:
+  #   build:
+  #     context: ./fm-api-gateway
+  #     dockerfile: Dockerfile
+  #   container_name: fm-api-gateway
+  #   ports:
+  #     - "8090:8000"
+  #   environment:
+  #     - AUTH_SERVICE_URL=http://fm-auth-service:8000
+  #     - SESSION_SERVICE_URL=http://fm-session-service:8000
+  #     - CASE_SERVICE_URL=http://fm-case-service:8000
+  #     - KNOWLEDGE_SERVICE_URL=http://fm-knowledge-service:8000
+  #     - EVIDENCE_SERVICE_URL=http://fm-evidence-service:8000
+  #     - AGENT_SERVICE_URL=http://fm-agent-service:8000
 
 volumes:
   redis-data:
-  auth-data:
-  case-data:
-  knowledge-data:
-  evidence-data:
+  chromadb-data:
 
 networks:
   default:

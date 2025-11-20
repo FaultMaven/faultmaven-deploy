@@ -1,241 +1,254 @@
 # FaultMaven - Self-Hosted Deployment
 
-**One-command deployment of FaultMaven AI troubleshooting platform**
+**The most powerful AI troubleshooter you can run on your laptop for free.**
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://hub.docker.com/u/faultmaven)
+
+---
 
 ## Overview
 
-This repository provides a complete Docker Compose deployment for self-hosting FaultMaven, an AI-powered troubleshooting copilot with milestone-based investigation and 3-tier RAG knowledge base. Deploy the entire platform with a single command.
+This repository provides a complete Docker Compose deployment for self-hosting **FaultMaven**, an AI-powered troubleshooting platform with:
 
-**New in v2.0**: MilestoneEngine for opportunistic AI investigation, LangGraph stateful agents, and 3-tier RAG architecture (User KB, Global KB, Case Evidence).
+- 🤖 **Complete AI Agent** - Full LangGraph agent with milestone-based investigation
+- 📚 **3-Tier RAG System** - Personal KB + Global KB + Case Working Memory
+- 📊 **8 Data Types** - Logs, traces, profiles, metrics, config, code, text, visual
+- 🗄️ **SQLite Database** - Zero configuration, single file, portable
+- 🔍 **ChromaDB Vector Search** - Semantic knowledge base retrieval
+- ⚙️ **Background Jobs** - Celery + Redis for async processing
+
+**Deploy the entire platform in 2 minutes with a single command.**
+
+---
+
+## Who Is This For?
+
+**✅ Perfect For:**
+- 👨‍💻 **Developers** - Study architecture, contribute code, learn AI troubleshooting
+- 🔬 **Tinkerers** - Experiment with LLMs, RAG, and agentic workflows
+- 🔐 **Privacy-conscious** - Keep sensitive data on-premises (air-gapped environments)
+- 🌍 **Open-source contributors** - Improve the product, add features
+
+**❌ Not For:**
+- Production team use (single-user architecture)
+- Collaboration workflows (no case/knowledge sharing)
+- Enterprise compliance needs (no SSO/RBAC)
+
+**For teams:** Try [FaultMaven Enterprise SaaS](https://faultmaven.ai) with free tier, team collaboration, and managed infrastructure.
+
+---
 
 ## Quick Start
 
+**Prerequisites:**
+- Docker & Docker Compose installed
+- 8GB RAM minimum
+- LLM API Key (OpenAI, Anthropic, or Fireworks AI)
+
+### 1. Clone Repository
+
 ```bash
-# Clone repository
 git clone https://github.com/FaultMaven/faultmaven-deploy.git
 cd faultmaven-deploy
-
-# Start all services
-docker-compose up -d
-
-# Check status
-docker-compose ps
-
-# View logs
-docker-compose logs -f
 ```
 
-FaultMaven will be available at `http://localhost:8090`
+### 2. Configure Environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and add your LLM API key:
+
+```bash
+# Required: Add at least one API key
+OPENAI_API_KEY=sk-your-key-here
+```
+
+**Get API keys:**
+- OpenAI: https://platform.openai.com/api-keys
+- Anthropic: https://console.anthropic.com/
+- Fireworks: https://fireworks.ai/api-keys
+
+### 3. Start FaultMaven
+
+```bash
+docker-compose up -d
+```
+
+This will:
+- Build/pull 9 Docker containers (7 services + Redis + ChromaDB)
+- Create SQLite database at `./data/faultmaven.db`
+- Initialize all tables automatically
+- Start background job worker
+
+### 4. Verify Health
+
+```bash
+# Check all services are running
+docker-compose ps
+
+# Test health endpoints
+curl http://localhost:8001/health  # Auth Service
+curl http://localhost:8003/health  # Case Service
+curl http://localhost:8004/health  # Knowledge Service
+curl http://localhost:8006/health  # Agent Service
+```
+
+Expected response:
+```json
+{
+  "status": "healthy",
+  "service": "fm-case-service",
+  "version": "1.0.0",
+  "database": "sqlite+aiosqlite"
+}
+```
+
+**✅ FaultMaven is ready!** See [QUICKSTART.md](QUICKSTART.md) for detailed usage guide.
+
+---
 
 ## Architecture
 
 ```
+┌──────────────────────────────────────────────────────────┐
+│              Browser Extension / API Client               │
+│                    (faultmaven-copilot)                   │
+└─────────────────────┬────────────────────────────────────┘
+                      │ HTTP
+                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│                    API Gateway (8090)                    │
-│              http://localhost:8090/api/v1                │
-└───────────┬─────────────────────────────────────────────┘
-            │
-            ├──> Auth Service (8001)       - JWT authentication
-            ├──> Session Service (8002)    - Redis session storage
-            ├──> Case Service (8003)       - Milestone-based case tracking
-            ├──> Knowledge Service (8004)  - 3-tier RAG (ChromaDB + BGE-M3)
-            ├──> Evidence Service (8005)   - File uploads (local storage)
-            ├──> Agent Service (8006)      - AI troubleshooting (MilestoneEngine)
-            └──> Job Worker                - Async tasks (Celery + Redis)
-                        │
-                        ├──> Redis (6379)     - Sessions, cache & task queue
-                        └──> ChromaDB (8000)  - Vector embeddings
+│              Individual Microservices (Ports)            │
+├─────────┬───────────┬───────────┬──────────┬────────────┤
+│  Auth   │  Session  │   Case    │Knowledge │  Evidence  │
+│  :8001  │   :8002   │   :8003   │  :8004   │   :8005    │
+└────┬────┴─────┬─────┴─────┬─────┴────┬─────┴──────┬─────┘
+     │          │           │          │            │
+     ▼          ▼           ▼          ▼            ▼
+┌────────┐ ┌────────┐ ┌────────┐ ┌──────────┐ ┌─────────┐
+│ SQLite │ │ Redis  │ │ SQLite │ │ ChromaDB │ │./data/  │
+│/data/  │ │(volume)│ │/data/  │ │ (volume) │ │uploads/ │
+└────────┘ └────────┘ └────────┘ └──────────┘ └─────────┘
+                                        ▲
+                                        │
+                            ┌───────────┴───────────┐
+                            │   Agent Service       │
+                            │   (AI Troubleshooting)│
+                            │   :8006              │
+                            └───────────────────────┘
 ```
 
-## Services
+### Services
 
 | Service | Port | Description |
 |---------|------|-------------|
-| **API Gateway** | 8090 | Central routing and authentication |
-| **Auth Service** | 8001 | User authentication with JWT |
+| **Auth Service** | 8001 | User authentication (JWT, Redis sessions) |
 | **Session Service** | 8002 | Session management with Redis |
-| **Case Service** | 8003 | Case lifecycle with milestone tracking |
-| **Knowledge Service** | 8004 | 3-tier RAG knowledge base (User KB, Global KB, Case Evidence) |
-| **Evidence Service** | 8005 | File upload/download |
+| **Case Service** | 8003 | Case lifecycle & milestone tracking |
+| **Knowledge Service** | 8004 | 3-tier RAG knowledge base (ChromaDB + BGE-M3) |
+| **Evidence Service** | 8005 | File uploads (logs, screenshots, configs) |
 | **Agent Service** | 8006 | AI troubleshooting agent (LangGraph + MilestoneEngine) |
-| **Job Worker** | - | Background tasks (document ingestion, case cleanup) |
+| **Job Worker** | - | Background tasks (Celery + Redis) |
 | **Redis** | 6379 | Session storage & task queue |
 | **ChromaDB** | 8000 | Vector database for semantic search |
 
+---
+
 ## Data Persistence
 
-All data is persisted in Docker volumes:
+All data is stored in the `./data/` directory:
 
-- `redis-data` - Redis session storage & Celery task queue
-- `chromadb-data` - Vector embeddings for semantic search
-- `auth-data` - User authentication database (SQLite)
-- `case-data` - Case management database (SQLite)
-- `knowledge-data` - Document metadata
-- `evidence-data` - Uploaded files
-
-To backup data:
-```bash
-docker-compose down
-docker run --rm -v faultmaven-deploy_case-data:/data -v $(pwd):/backup alpine tar czf /backup/backup.tar.gz /data
+```
+./data/
+├── faultmaven.db       # SQLite database (all microservices share this file)
+└── uploads/            # Evidence files
+    └── case_abc123/
+        └── error.log
 ```
 
-To restore data:
+**Benefits:**
+- ✅ **Portable** - Zip entire `./data/` folder and move to another laptop
+- ✅ **Simple Backup** - `zip -r backup.zip ./data`
+- ✅ **Version Control Friendly** - `.gitignore` excludes `/data/`
+- ✅ **Survives Restarts** - Data persists across `docker-compose down`
+
+**Backup:**
 ```bash
-docker run --rm -v faultmaven-deploy_case-data:/data -v $(pwd):/backup alpine tar xzf /backup/backup.tar.gz -C /
+# Backup entire FaultMaven state
+zip -r faultmaven-backup-$(date +%Y%m%d).zip ./data
+
+# Restore on another machine
+unzip faultmaven-backup-20251120.zip
+docker-compose up -d
 ```
 
-## Configuration
+---
 
-Default configuration works out of the box. To customize, create a `.env` file:
+## What's Included
 
-```bash
-# LLM Provider API Keys (required for AI agent)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-FIREWORKS_API_KEY=fw_...
+✅ **Complete AI Agent** - Full LangGraph agent with 8 milestones
+✅ **3-Tier RAG System** - Personal KB + Global KB + Case Working Memory
+✅ **All 8 Data Types** - Logs, traces, profiles, metrics, config, code, text, visual
+✅ **SQLite Database** - Zero configuration, single file, portable
+✅ **ChromaDB Vector Search** - Semantic knowledge base retrieval
+✅ **Background Jobs** - Celery + Redis for async processing
+✅ **Local File Storage** - All evidence files stay on your machine
 
-# Open Core Configuration
-PROFILE=public              # Options: public, enterprise
-DB_TYPE=sqlite              # Options: sqlite, postgresql
+---
 
-# Service ports (optional)
-AUTH_PORT=8001
-SESSION_PORT=8002
-CASE_PORT=8003
-KNOWLEDGE_PORT=8004
-EVIDENCE_PORT=8005
-AGENT_PORT=8006
-GATEWAY_PORT=8090
+## What's NOT Included (Enterprise Only)
 
-# Infrastructure (optional)
-REDIS_HOST=redis
-REDIS_PORT=6379
-CHROMADB_HOST=chromadb
-CHROMADB_PORT=8000
+❌ Team collaboration & case sharing
+❌ SSO/SAML authentication (Google, Okta, Azure AD)
+❌ Multi-tenant organizations & workspaces
+❌ S3 cloud storage & long-term retention
+❌ Advanced analytics dashboards & trend analysis
+❌ ML model management & confidence calibration
+❌ Professional support & SLA guarantees
 
-# Authentication (optional)
-JWT_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
+**Upgrade to Enterprise:** [https://faultmaven.ai/signup](https://faultmaven.ai/signup) *(free tier available)*
 
-# File uploads (optional)
-MAX_FILE_SIZE_MB=50
-```
+---
 
-## Usage
+## API Usage Examples
 
-### 1. Register a User
+### Create a Case
 
 ```bash
-curl -X POST http://localhost:8090/api/v1/auth/register \
+curl -X POST http://localhost:8003/api/v1/cases \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "user@example.com",
-    "password": "secure_password",
-    "full_name": "John Doe"
+    "title": "Production API latency spike",
+    "description": "Users reporting slow response times",
+    "user_id": "user_001"
   }'
 ```
 
-### 2. Login
+### Upload Evidence
 
 ```bash
-curl -X POST http://localhost:8090/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "secure_password"
-  }'
-```
-
-Response includes `access_token` and `refresh_token`.
-
-### 3. Create a Case
-
-```bash
-curl -X POST http://localhost:8090/api/v1/cases \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Database connection timeout",
-    "description": "Users experiencing intermittent timeouts"
-  }'
-```
-
-### 4. Upload Evidence
-
-```bash
-curl -X POST http://localhost:8090/api/v1/evidence \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -F "file=@application.log" \
+curl -X POST http://localhost:8005/api/v1/evidence \
+  -F "file=@/path/to/error.log" \
   -F "case_id=case_abc123" \
   -F "evidence_type=log"
 ```
 
-### 5. Search Knowledge Base
+### Query AI Agent
 
 ```bash
-curl -X POST http://localhost:8090/api/v1/knowledge/search \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "How to fix database timeouts?",
-    "limit": 5
-  }'
-```
-
-### 6. Get AI Troubleshooting Help
-
-```bash
-curl -X POST http://localhost:8090/api/v1/agent/investigate \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+curl -X POST http://localhost:8006/api/v1/agent/query \
   -H "Content-Type: application/json" \
   -d '{
     "case_id": "case_abc123",
-    "message": "The database is timing out intermittently during peak hours"
+    "message": "Analyze the error log and suggest root cause"
   }'
 ```
 
-The AI agent uses MilestoneEngine to opportunistically complete investigation milestones and provide adaptive troubleshooting guidance.
+**See [QUICKSTART.md](QUICKSTART.md) for complete API reference.**
 
-## Health Checks
-
-Check service health:
-
-```bash
-# Overall gateway health
-curl http://localhost:8090/health
-
-# Individual services
-curl http://localhost:8001/health  # Auth
-curl http://localhost:8002/health  # Session
-curl http://localhost:8003/health  # Case
-curl http://localhost:8004/health  # Knowledge
-curl http://localhost:8005/health  # Evidence
-curl http://localhost:8006/health  # Agent (AI troubleshooting)
-
-# Infrastructure
-curl http://localhost:6379         # Redis (session & task queue)
-curl http://localhost:8000/api/v1/heartbeat  # ChromaDB (vector database)
-```
-
-## Scaling
-
-To scale individual services:
-
-```bash
-# Scale session service to 3 replicas
-docker-compose up -d --scale session-service=3
-
-# Scale knowledge service for heavy RAG workloads
-docker-compose up -d --scale knowledge-service=2
-
-# Scale agent service for concurrent AI investigations
-docker-compose up -d --scale agent-service=3
-
-# Scale job workers for heavy background processing
-docker-compose up -d --scale job-worker=4
-```
+---
 
 ## Troubleshooting
 
@@ -243,102 +256,135 @@ docker-compose up -d --scale job-worker=4
 
 ```bash
 # Check logs
-docker-compose logs
+docker-compose logs fm-case-service
+docker-compose logs fm-agent-service
 
-# Restart services
-docker-compose restart
+# Restart specific service
+docker-compose restart fm-case-service
 
-# Rebuild images
+# Rebuild all services
 docker-compose up -d --build
 ```
 
-### Database issues
+### Database errors
 
 ```bash
-# Reset all data (CAUTION: destroys all data)
-docker-compose down -v
+# Remove old database and restart (WARNING: deletes all data)
+rm -rf ./data/
+docker-compose down
 docker-compose up -d
 ```
 
-### Performance tuning
+### Port conflicts
 
-For better performance with large knowledge bases:
+If ports 8001-8006 are already in use, edit `docker-compose.yml`:
 
-```bash
-# Allocate more memory to knowledge service
-docker-compose up -d --scale knowledge-service=1 --memory 4g
+```yaml
+ports:
+  - "9001:8000"  # Change 8001 to 9001
 ```
 
-## Monitoring
-
-View real-time logs:
+### ChromaDB connection issues
 
 ```bash
-# All services
-docker-compose logs -f
+# Check ChromaDB health
+curl http://localhost:8000/api/v1/heartbeat
 
-# Specific service
-docker-compose logs -f auth-service
-
-# Last 100 lines
-docker-compose logs --tail=100
+# Restart ChromaDB
+docker-compose restart chromadb
 ```
+
+---
 
 ## Updating
 
 To update to the latest version:
 
 ```bash
-# Pull latest images
-docker-compose pull
+# Pull latest changes
+git pull origin main
 
-# Restart with new images
-docker-compose up -d
+# Rebuild containers
+docker-compose up -d --build
+
+# Verify services are healthy
+docker-compose ps
+curl http://localhost:8003/health
 ```
 
-## Development
+---
 
-To develop against the deployment:
+## Stopping FaultMaven
 
 ```bash
-# Run services in development mode
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Stop all services (data persists in ./data/)
+docker-compose down
+
+# Stop and remove data (WARNING: deletes everything)
+docker-compose down -v
+rm -rf ./data/
 ```
 
-## Production Deployment
-
-For production, use:
-
-1. **Reverse Proxy**: Add nginx/traefik for SSL termination
-2. **External Database**: Replace SQLite with PostgreSQL
-3. **Object Storage**: Replace local storage with S3/MinIO
-4. **Monitoring**: Add Prometheus + Grafana
-5. **Backup**: Implement automated backup strategy
+---
 
 ## Components
 
-This deployment uses:
+This deployment uses microservices from:
 
 - [fm-core-lib](https://github.com/FaultMaven/fm-core-lib) - Shared models & LLM infrastructure
-- [fm-auth-service](https://github.com/FaultMaven/fm-auth-service) - Authentication & authorization
+- [fm-auth-service](https://github.com/FaultMaven/fm-auth-service) - Authentication & user management
 - [fm-session-service](https://github.com/FaultMaven/fm-session-service) - Session management (Redis)
 - [fm-case-service](https://github.com/FaultMaven/fm-case-service) - Milestone-based case lifecycle
-- [fm-knowledge-service](https://github.com/FaultMaven/fm-knowledge-service) - 3-tier RAG knowledge base
-- [fm-evidence-service](https://github.com/FaultMaven/fm-evidence-service) - File management
-- [fm-agent-service](https://github.com/FaultMaven/fm-agent-service) - AI troubleshooting agent (MilestoneEngine + LangGraph)
+- [fm-knowledge-service](https://github.com/FaultMaven/fm-knowledge-service) - 3-tier RAG knowledge base (ChromaDB)
+- [fm-evidence-service](https://github.com/FaultMaven/fm-evidence-service) - File upload & storage
+- [fm-agent-service](https://github.com/FaultMaven/fm-agent-service) - AI troubleshooting agent (LangGraph + MilestoneEngine)
 - [fm-job-worker](https://github.com/FaultMaven/fm-job-worker) - Background task processing (Celery)
-- [fm-api-gateway](https://github.com/FaultMaven/fm-api-gateway) - API routing (optional)
+
+---
+
+## Documentation
+
+- **[QUICKSTART.md](QUICKSTART.md)** - Detailed setup and usage guide
+- **[Architecture Overview](https://github.com/FaultMaven/FaultMaven/blob/main/docs/ARCHITECTURE.md)** - System design
+- **[ADR-002](https://github.com/FaultMaven/faultmaven-doc-internal/blob/main/architecture/adr/002-self-hosted-feature-scope.md)** - Self-hosted version architecture decisions
+- **[API Reference](https://github.com/FaultMaven/FaultMaven/blob/main/docs/API.md)** - Complete endpoint documentation
+
+---
 
 ## License
 
-Apache 2.0 - See [LICENSE](LICENSE) for details.
+**Apache 2.0 License** - See [LICENSE](LICENSE) for details.
+
+**Why Apache 2.0?**
+- ✅ Use commercially without restrictions
+- ✅ Fork, modify, commercialize freely
+- ✅ Patent grant protection
+- ✅ Enterprise-friendly (same license as Kubernetes, Android)
+
+**TL;DR:** You can use FaultMaven for anything, including building commercial products. No strings attached.
+
+---
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/FaultMaven/faultmaven-deploy/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/FaultMaven/faultmaven-deploy/discussions)
-- **Documentation**: [docs.faultmaven.com](https://docs.faultmaven.com)
+- **GitHub Issues**: [Report bugs](https://github.com/FaultMaven/faultmaven-deploy/issues)
+- **GitHub Discussions**: [Ask questions](https://github.com/FaultMaven/faultmaven-deploy/discussions)
+- **Main Project**: [FaultMaven](https://github.com/FaultMaven/FaultMaven)
+
+---
 
 ## Contributing
 
-Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions welcome! See [CONTRIBUTING.md](https://github.com/FaultMaven/FaultMaven/blob/main/CONTRIBUTING.md) for guidelines.
+
+**Quick start:**
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Make changes and test locally
+4. Commit (`git commit -m 'Add amazing feature'`)
+5. Push (`git push origin feature/amazing-feature`)
+6. Open Pull Request
+
+---
+
+**FaultMaven** - Making troubleshooting faster, smarter, and more collaborative.
