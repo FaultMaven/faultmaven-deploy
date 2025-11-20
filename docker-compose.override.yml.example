@@ -1,0 +1,95 @@
+# Docker Compose Override - Resource Limits
+# This file prevents FaultMaven from overwhelming your system
+#
+# USAGE:
+#   The ./faultmaven script will auto-create this file as docker-compose.override.yml
+#   Or manually: cp docker-compose.override.yml.example docker-compose.override.yml
+#
+# WHY NEEDED:
+#   - Prevents AI services from consuming all available RAM
+#   - Keeps your laptop usable during troubleshooting sessions
+#   - Ensures predictable performance on 8GB RAM systems
+#
+# CUSTOMIZATION:
+#   Increase limits if you have 16GB+ RAM:
+#     cpus: '2.0'      # Use 2 CPU cores instead of 1
+#     memory: 4G       # Use 4GB instead of 2GB
+
+services:
+  # AI Agent Service - Most memory-intensive (LangGraph + LLM calls)
+  fm-agent-service:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'          # Max 1 CPU core
+          memory: 1.5G         # Max 1.5GB RAM
+        reservations:
+          memory: 512M         # Guarantee 512MB minimum
+
+  # Knowledge Service - Vector DB + embeddings
+  fm-knowledge-service:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G           # Larger for ChromaDB operations
+        reservations:
+          memory: 1G
+
+  # ChromaDB - Vector database
+  chromadb:
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # Redis - Session store (lightweight)
+  redis:
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Other services use default Docker limits (typically sufficient)
+  # Uncomment and adjust if needed:
+
+  # fm-case-service:
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.5'
+  #         memory: 512M
+
+  # fm-auth-service:
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.5'
+  #         memory: 512M
+
+  # fm-session-service:
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.5'
+  #         memory: 512M
+
+  # fm-evidence-service:
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.5'
+  #         memory: 512M
+
+  # fm-job-worker:
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.5'
+  #         memory: 512M

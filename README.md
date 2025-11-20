@@ -41,52 +41,114 @@ This repository provides a complete Docker Compose deployment for self-hosting *
 
 ## Quick Start
 
-**Prerequisites:**
-- Docker & Docker Compose installed
-- 8GB RAM minimum
-- LLM API Key (OpenAI, Anthropic, or Fireworks AI)
-
-### 1. Clone Repository
+**⚡ Four Simple Steps:**
 
 ```bash
+# 1. Install: Clone the repository
 git clone https://github.com/FaultMaven/faultmaven-deploy.git
 cd faultmaven-deploy
-```
 
-### 2. Configure Environment
-
-```bash
+# 2. Secure: Add your API key
 cp .env.example .env
+# Edit .env and add: OPENAI_API_KEY=sk-...
+
+# 3. Protect: Resource limits (auto-created by wrapper)
+# The ./faultmaven script handles this automatically
+
+# 4. Run: Start everything with one command
+./faultmaven start
 ```
 
-Edit `.env` and add your LLM API key:
+**That's it!** FaultMaven is now running on your laptop.
+
+### Prerequisites
+
+**Required:**
+- **Docker** & **Docker Compose** ([Get Docker](https://docs.docker.com/get-docker/))
+- **8GB RAM** minimum (16GB recommended)
+- **Cloud LLM API Key** - Choose one:
+  - [OpenAI](https://platform.openai.com/api-keys) (GPT-4)
+  - [Anthropic](https://console.anthropic.com/) (Claude)
+  - [Fireworks AI](https://fireworks.ai/api-keys) (Multiple models)
+
+### ⚠️ **Critical: Cloud LLM Required**
+
+FaultMaven self-hosted uses **cloud AI providers** (OpenAI/Anthropic/Fireworks) via your API key.
+
+**Why not run a local LLM like Ollama?**
+- 🚫 Agentic workflows require **70B+ parameter models**
+- 🚫 Local LLMs need **32GB+ RAM + dedicated GPU**
+- 🚫 Inference would be too slow for interactive troubleshooting
+- ✅ Cloud APIs provide **better quality** and **faster responses**
+- ✅ Cost: **$0.10-$0.50 per session** (cheaper than GPU hardware)
+
+**What runs locally:**
+- ✅ All 7 microservices (auth, case, evidence, knowledge, agent, session, jobs)
+- ✅ ChromaDB vector database
+- ✅ Redis session store
+- ✅ SQLite data storage
+- ✅ All your sensitive data stays on your machine
+
+**What uses cloud:**
+- ☁️ **LLM inference only** (via your API key)
+- ☁️ **No FaultMaven tracking** or data collection
+
+**Your data never leaves your laptop** - only anonymous prompts/responses go to the LLM provider you choose.
+
+---
+
+## Using the CLI Wrapper
+
+The `./faultmaven` script simplifies deployment with pre-flight checks and resource management:
 
 ```bash
-# Required: Add at least one API key
-OPENAI_API_KEY=sk-your-key-here
+# Start with full validation
+./faultmaven start
+
+# Check service status and health
+./faultmaven status
+
+# View logs (all services)
+./faultmaven logs
+
+# View logs (specific service)
+./faultmaven logs fm-agent-service
+
+# Stop services (preserves data)
+./faultmaven stop
+
+# Reset to factory defaults (DANGER: deletes all data)
+./faultmaven clean
+
+# Show help
+./faultmaven help
 ```
 
-**Get API keys:**
-- OpenAI: https://platform.openai.com/api-keys
-- Anthropic: https://console.anthropic.com/
-- Fireworks: https://fireworks.ai/api-keys
+**The wrapper automatically:**
+- ✅ Checks Docker is running
+- ✅ Verifies you have 8GB+ RAM
+- ✅ Validates .env file has API key
+- ✅ Creates resource limits (docker-compose.override.yml)
+- ✅ Tests service health endpoints
 
-### 3. Start FaultMaven
+---
+
+## Manual Deployment (Advanced)
+
+If you prefer direct Docker Compose commands:
 
 ```bash
+# Configure environment
+cp .env.example .env
+# Edit .env and add: OPENAI_API_KEY=sk-...
+
+# Create resource limits (recommended)
+cp docker-compose.override.yml.example docker-compose.override.yml
+
+# Start all services
 docker-compose up -d
-```
 
-This will:
-- Build/pull 9 Docker containers (7 services + Redis + ChromaDB)
-- Create SQLite database at `./data/faultmaven.db`
-- Initialize all tables automatically
-- Start background job worker
-
-### 4. Verify Health
-
-```bash
-# Check all services are running
+# Check status
 docker-compose ps
 
 # Test health endpoints
@@ -96,7 +158,7 @@ curl http://localhost:8004/health  # Knowledge Service
 curl http://localhost:8006/health  # Agent Service
 ```
 
-Expected response:
+Expected health response:
 ```json
 {
   "status": "healthy",

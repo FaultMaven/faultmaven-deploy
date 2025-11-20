@@ -1,27 +1,75 @@
 # FaultMaven Self-Hosted - Quick Start Guide
 
-**Get FaultMaven running on your laptop in 2 minutes.**
+**Get FaultMaven running on your laptop in under 5 minutes.**
+
+---
+
+## ⚡ TL;DR - Four Simple Steps
+
+```bash
+# 1. Install: Clone the repository
+git clone https://github.com/FaultMaven/faultmaven-deploy.git
+cd faultmaven-deploy
+
+# 2. Secure: Add your API key
+cp .env.example .env
+# Edit .env and add: OPENAI_API_KEY=sk-...
+
+# 3. Protect: Resource limits (auto-created)
+# The ./faultmaven script will create docker-compose.override.yml
+
+# 4. Run: Start everything
+./faultmaven start
+```
+
+That's it! FaultMaven is now running on your laptop.
 
 ---
 
 ## Prerequisites
 
-- **Docker** & **Docker Compose** installed
-- **8GB RAM** minimum
-- **LLM API Key** (OpenAI, Anthropic, or Fireworks AI)
+### Required
+- **Docker** & **Docker Compose** installed ([Get Docker](https://docs.docker.com/get-docker/))
+- **8GB RAM** minimum (16GB recommended)
+- **Cloud LLM API Key** - Choose one:
+  - [OpenAI](https://platform.openai.com/api-keys) (GPT-4)
+  - [Anthropic](https://console.anthropic.com/) (Claude)
+  - [Fireworks AI](https://fireworks.ai/api-keys) (Multiple models)
+
+### ⚠️ Important: Cloud LLM Required
+
+FaultMaven self-hosted uses **your choice of cloud AI providers** via API.
+
+**Why not a local LLM like Ollama?**
+- Local LLM (Llama 70B+) requires **32GB+ RAM** and a **dedicated GPU**
+- Inference speed would be too slow for interactive troubleshooting
+- Cloud APIs provide **better quality** and **faster responses**
+- Agentic complexity typically fails on smaller local models
+
+**Cost estimate:** $0.10-$0.50 per troubleshooting session (using GPT-4) - cheaper than running GPU hardware.
+
+**What runs locally:**
+- ✅ All services (case management, evidence storage, etc.)
+- ✅ ChromaDB vector database
+- ✅ Redis session store
+- ✅ SQLite data storage
+
+**What uses cloud:**
+- ☁️ LLM inference only (via your API key)
+- ☁️ No FaultMaven tracking or data collection
 
 ---
 
-## Setup Steps
+## Installation Steps
 
-### 1. Clone Repository
+### Step 1: Install - Clone Repository
 
 ```bash
-git clone https://github.com/FaultMaven/product.git faultmaven
-cd faultmaven
+git clone https://github.com/FaultMaven/faultmaven-deploy.git
+cd faultmaven-deploy
 ```
 
-### 2. Configure Environment
+### Step 2: Secure - Add Your API Key
 
 ```bash
 cp .env.example .env
@@ -31,7 +79,11 @@ Edit `.env` and add your LLM API key:
 
 ```bash
 # Required: Add at least one API key
-OPENAI_API_KEY=sk-your-key-here
+OPENAI_API_KEY=sk-your-actual-key-here
+
+# Optional: Add more providers for fallback
+# ANTHROPIC_API_KEY=sk-ant-...
+# FIREWORKS_API_KEY=fw_...
 ```
 
 **Get API keys:**
@@ -39,55 +91,108 @@ OPENAI_API_KEY=sk-your-key-here
 - Anthropic: https://console.anthropic.com/
 - Fireworks: https://fireworks.ai/api-keys
 
-### 3. Start FaultMaven
+### Step 3: Protect - Resource Limits
+
+**This step is automatic!** The `./faultmaven start` command will create `docker-compose.override.yml` with sensible resource limits to keep your laptop usable.
+
+**What it does:**
+- Limits AI services to 2GB RAM each
+- Prevents ChromaDB from consuming all CPU
+- Ensures you can still use other apps
+
+**Customize (optional):**
+```bash
+# Edit resource limits if you have 16GB+ RAM
+nano docker-compose.override.yml
+```
+
+### Step 4: Run - Start FaultMaven
 
 ```bash
-docker-compose up -d
+./faultmaven start
 ```
 
-This will:
-- Pull/build 9 Docker containers (7 services + Redis + ChromaDB)
-- Create SQLite database at `./data/faultmaven.db`
-- Initialize all tables automatically
-- Start background job worker
+The wrapper script will:
+1. ✅ Check Docker is running
+2. ✅ Verify you have enough RAM
+3. ✅ Validate your .env file
+4. ✅ Create resource limits file
+5. ✅ Build and start all services
 
-### 4. Verify Health
+**First run takes 5-10 minutes** (downloads and builds Docker images).
+
+---
+
+## Using the `./faultmaven` CLI
+
+The wrapper script simplifies all operations:
 
 ```bash
-# Check all services are running
-docker-compose ps
+# Start all services (with pre-flight checks)
+./faultmaven start
 
-# Test health endpoints
-curl http://localhost:8001/health  # Auth Service
-curl http://localhost:8003/health  # Case Service
-curl http://localhost:8004/health  # Knowledge Service
-curl http://localhost:8006/health  # Agent Service
+# Check service status and health
+./faultmaven status
+
+# View logs from all services
+./faultmaven logs
+
+# View logs from specific service
+./faultmaven logs fm-agent-service
+
+# Stop all services (preserves data)
+./faultmaven stop
+
+# DANGER: Delete all data and reset
+./faultmaven clean
+
+# Show help
+./faultmaven help
 ```
 
-Expected response:
-```json
-{
-  "status": "healthy",
-  "service": "fm-case-service",
-  "version": "1.0.0",
-  "database": "sqlite+aiosqlite"
-}
+---
+
+## Verifying Installation
+
+### Check Service Status
+
+```bash
+./faultmaven status
 ```
 
-### 5. Access Services
+Expected output:
+```
+╔════════════════════════════════════════╗
+║  FaultMaven Self-Hosted Manager      ║
+╚════════════════════════════════════════╝
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| **Agent Service** | http://localhost:8006 | AI troubleshooting agent |
-| **Case Service** | http://localhost:8003 | Case management API |
-| **Knowledge Service** | http://localhost:8004 | Knowledge base & semantic search |
-| **Auth Service** | http://localhost:8001 | User authentication |
-| **Evidence Service** | http://localhost:8005 | File upload & storage |
+Service Status:
+NAME                    STATUS              PORTS
+fm-auth-service         Up (healthy)        0.0.0.0:8001->8001/tcp
+fm-case-service         Up (healthy)        0.0.0.0:8003->8003/tcp
+fm-knowledge-service    Up (healthy)        0.0.0.0:8004->8004/tcp
+fm-agent-service        Up (healthy)        0.0.0.0:8006->8006/tcp
+...
 
-**API Documentation:**
-- http://localhost:8006/docs (Agent Service Swagger UI)
-- http://localhost:8003/docs (Case Service Swagger UI)
-- http://localhost:8004/docs (Knowledge Service Swagger UI)
+Health Checks:
+✓ Auth Service (port 8001)
+✓ Session Service (port 8002)
+✓ Case Service (port 8003)
+✓ Knowledge Service (port 8004)
+✓ Evidence Service (port 8005)
+✓ Agent Service (port 8006)
+✓ API Gateway (port 8090)
+```
+
+### Access API Documentation
+
+| Service | Swagger UI |
+|---------|-----------|
+| **Agent Service** | http://localhost:8006/docs |
+| **Case Service** | http://localhost:8003/docs |
+| **Knowledge Service** | http://localhost:8004/docs |
+| **Auth Service** | http://localhost:8001/docs |
+| **Evidence Service** | http://localhost:8005/docs |
 
 ---
 
@@ -102,7 +207,7 @@ Configure extension settings:
 
 ### Option 2: Direct API Calls
 
-Create a troubleshooting case:
+#### Create a troubleshooting case:
 
 ```bash
 curl -X POST http://localhost:8003/api/v1/cases \
@@ -114,7 +219,7 @@ curl -X POST http://localhost:8003/api/v1/cases \
   }'
 ```
 
-Upload evidence:
+#### Upload evidence:
 
 ```bash
 curl -X POST http://localhost:8005/api/v1/evidence \
@@ -123,7 +228,7 @@ curl -X POST http://localhost:8005/api/v1/evidence \
   -F "evidence_type=log"
 ```
 
-Query AI agent:
+#### Query AI agent:
 
 ```bash
 curl -X POST http://localhost:8006/api/v1/agent/query \
@@ -136,9 +241,11 @@ curl -X POST http://localhost:8006/api/v1/agent/query \
 
 ---
 
-## Data Persistence
+## Data Management
 
-All your data is stored in the `./data/` directory:
+### Where Your Data Lives
+
+All data is stored in the `./data/` directory:
 
 ```
 ./data/
@@ -148,17 +255,27 @@ All your data is stored in the `./data/` directory:
         └── error.log
 ```
 
-**Backup:**
+### Backup & Restore
+
 ```bash
 # Backup entire FaultMaven state
-zip -r faultmaven-backup.zip ./data
+zip -r faultmaven-backup-$(date +%Y%m%d).zip ./data
 
 # Restore on another machine
-unzip faultmaven-backup.zip
-docker-compose up -d
+unzip faultmaven-backup-20250120.zip
+./faultmaven start
 ```
 
-**The SQLite database is portable** - you can move it to another laptop and everything works!
+**The SQLite database is portable** - move it to another laptop and everything works!
+
+### Reset to Factory Defaults
+
+```bash
+./faultmaven clean
+# Type 'DELETE' to confirm
+```
+
+**⚠️ WARNING:** This permanently deletes all cases, evidence, and knowledge base documents.
 
 ---
 
@@ -167,22 +284,27 @@ docker-compose up -d
 ### Services won't start
 
 ```bash
-# Check logs
-docker-compose logs fm-case-service
-docker-compose logs fm-agent-service
+# Check what's failing
+./faultmaven status
 
-# Restart specific service
-docker-compose restart fm-case-service
+# View detailed logs
+./faultmaven logs
+
+# View logs for specific service
+./faultmaven logs fm-agent-service
+
+# Restart all services
+./faultmaven stop
+./faultmaven start
 ```
 
-### Database errors
+### "Insufficient RAM" warning
 
-```bash
-# Remove old database and restart (WARNING: deletes all data)
-rm -rf ./data/
-docker-compose down
-docker-compose up -d
-```
+You have less than 8GB available. Options:
+
+1. **Close other applications** to free RAM
+2. **Reduce resource limits** in `docker-compose.override.yml`
+3. **Disable heavy services** (comment out fm-knowledge-service in docker-compose.yml)
 
 ### Port conflicts
 
@@ -190,57 +312,90 @@ If ports 8001-8006 are already in use, edit `docker-compose.yml`:
 
 ```yaml
 ports:
-  - "9001:8000"  # Change 8001 to 9001
+  - "9001:8001"  # Change external port to 9001
 ```
 
----
-
-## Stopping FaultMaven
+### Docker daemon not running
 
 ```bash
-# Stop all services (data persists)
-docker-compose down
-
-# Stop and remove data (WARNING: deletes everything)
-docker-compose down -v
-rm -rf ./data/
+# macOS/Windows: Start Docker Desktop
+# Linux: sudo systemctl start docker
 ```
 
 ---
 
-## What's Included
+## What's Included vs. What's Not
 
-✅ **Complete AI Agent** - Full LangGraph agent with 8 milestones
-✅ **3-Tier RAG System** - Personal KB + Global KB + Case Working Memory
-✅ **All 8 Data Types** - Logs, traces, profiles, metrics, config, code, text, visual
-✅ **SQLite Database** - Zero configuration, single file, portable
-✅ **ChromaDB Vector Search** - Semantic knowledge base retrieval
-✅ **Background Jobs** - Celery + Redis for async processing
-✅ **Local File Storage** - All evidence files stay on your machine
+### ✅ Self-Hosted Includes
+
+- **Complete AI Agent** - Full LangGraph agent with 8 milestones
+- **3-Tier RAG System** - Personal KB + Global KB + Case Working Memory
+- **All 8 Data Types** - Logs, traces, profiles, metrics, config, code, text, visual
+- **SQLite Database** - Zero configuration, single file, portable
+- **ChromaDB Vector Search** - Semantic knowledge base retrieval
+- **Background Jobs** - Celery + Redis for async processing
+- **Local File Storage** - All evidence files stay on your machine
+- **Full API Access** - All endpoints available
+
+### ❌ Enterprise-Only Features
+
+- Team collaboration & case sharing
+- SSO/SAML authentication
+- Multi-tenant organizations
+- S3 cloud storage integration
+- Advanced analytics dashboards
+- Audit logs & compliance reports
+- Professional support & SLA
+- Managed hosting with 99.9% uptime
+
+**Need Enterprise features?** Contact us at enterprise@faultmaven.ai *(coming soon)*
 
 ---
 
-## What's NOT Included (Enterprise Only)
+## Performance Expectations
 
-❌ Team collaboration & case sharing
-❌ SSO/SAML authentication
-❌ Multi-tenant organizations
-❌ S3 cloud storage
-❌ Advanced analytics dashboards
-❌ Professional support & SLA
+### On 8GB RAM Laptop
+- **Startup time:** 5-10 minutes (first run)
+- **Response time:** 2-5 seconds (AI agent queries)
+- **Concurrent cases:** 1-2 active investigations
+- **Storage limit:** ~10GB (SQLite + uploads)
 
-**Upgrade to Enterprise:** https://faultmaven.ai/signup *(coming soon)*
+### On 16GB+ RAM Desktop
+- **Startup time:** 2-3 minutes (first run)
+- **Response time:** 1-2 seconds (AI agent queries)
+- **Concurrent cases:** 5-10 active investigations
+- **Storage limit:** ~50GB+ (depends on evidence uploads)
 
 ---
 
 ## Next Steps
 
-1. **Read the docs:** [Architecture Overview](./docs/ARCHITECTURE.md)
-2. **Contribute:** [Contributing Guide](./CONTRIBUTING.md)
-3. **Get help:** [GitHub Discussions](https://github.com/FaultMaven/FaultMaven/discussions)
+1. **Explore the API:** Open http://localhost:8006/docs and try the interactive API
+2. **Read architecture docs:** Understand how FaultMaven works ([ARCHITECTURE.md](./ARCHITECTURE.md))
+3. **Join community:** [GitHub Discussions](https://github.com/FaultMaven/faultmaven-deploy/discussions)
+4. **Report issues:** [GitHub Issues](https://github.com/FaultMaven/faultmaven-deploy/issues)
 
 ---
 
-**Questions?** Open an issue at https://github.com/FaultMaven/FaultMaven/issues
+## FAQ
+
+**Q: Can I use Ollama or other local LLMs?**
+A: Not recommended. Agentic workflows require large models (70B+ parameters) that need 32GB+ RAM and GPU. Cloud APIs are faster and cheaper.
+
+**Q: Is my data sent to FaultMaven servers?**
+A: No. All data stays on your laptop. Only LLM API calls go to your chosen provider (OpenAI/Anthropic/Fireworks).
+
+**Q: Can I run this in production?**
+A: Self-hosted is for **single-user development/testing only**. For production, use Enterprise SaaS with HA PostgreSQL, S3 storage, and 99.9% SLA.
+
+**Q: How do I update to the latest version?**
+A: `git pull origin main && ./faultmaven stop && ./faultmaven start --build`
+
+**Q: Can I contribute code?**
+A: Yes! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+
+---
 
 **FaultMaven** - The most powerful AI troubleshooter you can run on your laptop for free.
+
+**Questions?** Open an issue at https://github.com/FaultMaven/faultmaven-deploy/issues
