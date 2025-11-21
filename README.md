@@ -182,31 +182,39 @@ Expected health response:
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│              Browser Extension / API Client               │
-│                    (faultmaven-copilot)                   │
-└─────────────────────┬────────────────────────────────────┘
-                      │ HTTP
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│              Individual Microservices (Ports)            │
-├─────────┬───────────┬───────────┬──────────┬────────────┤
-│  Auth   │  Session  │   Case    │Knowledge │  Evidence  │
-│  :8001  │   :8002   │   :8003   │  :8004   │   :8005    │
-└────┬────┴─────┬─────┴─────┬─────┴────┬─────┴──────┬─────┘
-     │          │           │          │            │
-     ▼          ▼           ▼          ▼            ▼
-┌────────┐ ┌────────┐ ┌────────┐ ┌──────────┐ ┌─────────┐
-│ SQLite │ │ Redis  │ │ SQLite │ │ ChromaDB │ │./data/  │
-│/data/  │ │(volume)│ │/data/  │ │ (volume) │ │uploads/ │
-└────────┘ └────────┘ └────────┘ └──────────┘ └─────────┘
-                                        ▲
-                                        │
-                            ┌───────────┴───────────┐
-                            │   Agent Service       │
-                            │   (AI Troubleshooting)│
-                            │   :8006              │
-                            └───────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                        USER INTERFACES                        │
+├──────────────────────────┬───────────────────────────────────┤
+│  Browser Extension (UI)  │    Dashboard Web UI (Port 3000)   │
+│  faultmaven-copilot      │    faultmaven-dashboard           │
+│  • Real-time chat        │    • Login/Authentication         │
+│  • Interactive Q&A       │    • Knowledge Base management    │
+│  • Evidence upload       │    • Document upload              │
+└────────────┬─────────────┴──────────────┬────────────────────┘
+             │                            │
+             │           HTTP API         │
+             ▼                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Backend Microservices (Ports 8001-8006)         │
+├─────────┬───────────┬───────────┬──────────┬───────┬────────┤
+│  Auth   │  Session  │   Case    │Knowledge │Evidence│ Agent  │
+│  :8001  │   :8002   │   :8003   │  :8004   │ :8005  │ :8006  │
+│         │           │           │          │        │        │
+│ Simple  │ Redis     │ Milestone │ 3-Tier   │ File   │LangGraph│
+│ Auth    │ Sessions  │ Tracking  │   RAG    │ Upload │  AI    │
+└────┬────┴─────┬─────┴─────┬─────┴────┬─────┴───┬────┴────┬───┘
+     │          │           │          │         │         │
+     ▼          ▼           ▼          ▼         ▼         ▼
+┌────────┐ ┌────────┐ ┌────────┐ ┌──────────┐ ┌─────┐ ┌──────┐
+│ SQLite │ │ Redis  │ │ SQLite │ │ ChromaDB │ │./data││Cloud │
+│/data/  │ │:6379   │ │/data/  │ │  :8007   │ │files││ LLM  │
+└────────┘ └────────┘ └────────┘ └──────────┘ └─────┘ └──────┘
+                                                         ▲
+                            Background Workers           │
+                            ┌──────────┬──────────┐      │
+                            │Job Worker│Worker Beat│     │
+                            │ (Celery) │(Scheduler)│─────┘
+                            └──────────┴──────────┘
 ```
 
 ### Services

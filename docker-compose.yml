@@ -42,6 +42,10 @@ services:
       - DATABASE_URL=sqlite+aiosqlite:////data/faultmaven.db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      # Simple auth for self-hosted
+      - DASHBOARD_USERNAME=${DASHBOARD_USERNAME:-admin}
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-changeme123}
+      - DEFAULT_USER_TOKEN=${DEFAULT_USER_TOKEN:-}
     volumes:
       - ./data:/data
     depends_on:

@@ -75,7 +75,7 @@ cd faultmaven-deploy
 cp .env.example .env
 ```
 
-Edit `.env` and add your LLM API key:
+Edit `.env` and configure:
 
 ```bash
 # Required: Add at least one API key
@@ -84,12 +84,22 @@ OPENAI_API_KEY=sk-your-actual-key-here
 # Optional: Add more providers for fallback
 # ANTHROPIC_API_KEY=sk-ant-...
 # FIREWORKS_API_KEY=fw_...
+
+# Simple Authentication (Self-Hosted)
+# IMPORTANT: Change these default credentials!
+DASHBOARD_USERNAME=admin
+DASHBOARD_PASSWORD=changeme123
+
+# Optional: Headless mode for browser extension
+# DEFAULT_USER_TOKEN=my-secret-token
 ```
 
 **Get API keys:**
 - OpenAI: https://platform.openai.com/api-keys
 - Anthropic: https://console.anthropic.com/
 - Fireworks: https://fireworks.ai/api-keys
+
+**⚠️ Security Note:** The default credentials (`admin`/`changeme123`) are for initial setup only. Change them before deploying anywhere accessible beyond localhost!
 
 ### Step 3: Protect - Resource Limits
 
@@ -120,6 +130,25 @@ The wrapper script will:
 5. ✅ Build and start all services
 
 **First run takes 5-10 minutes** (downloads and builds Docker images).
+
+### Step 5: Access the Dashboard
+
+Once services are running, open your browser:
+
+**Dashboard Login:** http://localhost:3000
+
+```
+Username: admin
+Password: changeme123
+```
+
+From the dashboard you can:
+- 📚 **Upload knowledge base documents** (runbooks, post-mortems, documentation)
+- 🔍 **Search your knowledge base** with semantic search
+- 📊 **Manage your documentation** organized by categories
+- 👤 **Change your password** (recommended!)
+
+**Browser Extension:** Install the [FaultMaven Copilot](https://github.com/FaultMaven/faultmaven-copilot) extension for real-time chat troubleshooting.
 
 ---
 
