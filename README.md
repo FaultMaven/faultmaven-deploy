@@ -163,6 +163,7 @@ curl http://localhost:8006/health  # Agent Service
 
 # Access web dashboard
 open http://localhost:3000  # Knowledge Base Management Dashboard
+# Login: admin / changeme123 (change password after first login!)
 ```
 
 Expected health response:

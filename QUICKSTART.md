@@ -101,6 +101,8 @@ DASHBOARD_PASSWORD=changeme123
 
 **⚠️ Security Note:** The default credentials (`admin`/`changeme123`) are for initial setup only. Change them before deploying anywhere accessible beyond localhost!
 
+**Development Mode:** The auth service runs in simplified "development mode" for self-hosted deployments. While the login page may show "any username works", you should still use the configured `admin` account for consistency and to prepare for future security updates.
+
 ### Step 3: Protect - Resource Limits
 
 **This step is automatic!** The `./faultmaven start` command will create `docker-compose.override.yml` with sensible resource limits to keep your laptop usable.
@@ -142,13 +144,20 @@ Username: admin
 Password: changeme123
 ```
 
+**⚠️ IMPORTANT:** Change your password immediately after first login! The default credentials are only for initial setup.
+
+**Port Architecture Note:** The Dashboard (port 3000) is your web UI. It connects internally to backend API services (ports 8001-8007) which you don't need to access directly. Everything goes through the dashboard.
+
 From the dashboard you can:
 - 📚 **Upload knowledge base documents** (runbooks, post-mortems, documentation)
 - 🔍 **Search your knowledge base** with semantic search
 - 📊 **Manage your documentation** organized by categories
-- 👤 **Change your password** (recommended!)
+- 👤 **Change your password** (do this first!)
 
-**Browser Extension:** Install the [FaultMaven Copilot](https://github.com/FaultMaven/faultmaven-copilot) extension for real-time chat troubleshooting.
+**Browser Extension:** For real-time chat troubleshooting, install the browser extension:
+- **Chrome/Edge**: Clone [faultmaven-copilot](https://github.com/FaultMaven/faultmaven-copilot) and load as unpacked extension ([instructions](https://github.com/FaultMaven/faultmaven-copilot#installation))
+- **Firefox**: Build instructions in the repository README
+- The extension connects to the same backend services (localhost:8001-8006)
 
 ---
 
