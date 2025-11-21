@@ -19,7 +19,7 @@ services:
     image: chromadb/chroma:latest
     container_name: faultmaven-chromadb
     ports:
-      - "8000:8000"
+      - "8007:8000"
     volumes:
       - chromadb-data:/chroma/chroma
     environment:
@@ -199,6 +199,26 @@ services:
       redis:
         condition: service_healthy
     command: ["celery", "-A", "job_worker.celery_app", "beat", "--loglevel=info"]
+
+  # Dashboard - Knowledge Base Management UI
+  fm-dashboard:
+    build:
+      context: ../faultmaven-dashboard
+      dockerfile: Dockerfile
+      args:
+        # Dashboard connects to knowledge service for KB management
+        - VITE_API_URL=http://localhost:8004
+    container_name: fm-dashboard
+    ports:
+      - "3000:80"
+    depends_on:
+      - fm-knowledge-service
+      - fm-auth-service
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
 
   # API Gateway (optional - for future use)
   # fm-api-gateway:

@@ -83,7 +83,9 @@ FaultMaven self-hosted uses **cloud AI providers** (OpenAI/Anthropic/Fireworks) 
 - ✅ Cost: **$0.10-$0.50 per session** (cheaper than GPU hardware)
 
 **What runs locally:**
-- ✅ All 7 microservices (auth, case, evidence, knowledge, agent, session, jobs)
+- ✅ All 6 microservices (auth, case, evidence, knowledge, agent, session)
+- ✅ Dashboard web UI for knowledge base management
+- ✅ Background job workers (Celery)
 - ✅ ChromaDB vector database
 - ✅ Redis session store
 - ✅ SQLite data storage
@@ -153,9 +155,14 @@ docker-compose ps
 
 # Test health endpoints
 curl http://localhost:8001/health  # Auth Service
+curl http://localhost:8002/health  # Session Service
 curl http://localhost:8003/health  # Case Service
 curl http://localhost:8004/health  # Knowledge Service
+curl http://localhost:8005/health  # Evidence Service
 curl http://localhost:8006/health  # Agent Service
+
+# Access web dashboard
+open http://localhost:3000  # Knowledge Base Management Dashboard
 ```
 
 Expected health response:
@@ -212,9 +219,11 @@ Expected health response:
 | **Knowledge Service** | 8004 | 3-tier RAG knowledge base (ChromaDB + BGE-M3) |
 | **Evidence Service** | 8005 | File uploads (logs, screenshots, configs) |
 | **Agent Service** | 8006 | AI troubleshooting agent (LangGraph + MilestoneEngine) |
+| **Dashboard** | 3000 | Web UI for knowledge base management (React + Nginx) |
 | **Job Worker** | - | Background tasks (Celery + Redis) |
+| **Job Worker Beat** | - | Celery task scheduler |
 | **Redis** | 6379 | Session storage & task queue |
-| **ChromaDB** | 8000 | Vector database for semantic search |
+| **ChromaDB** | 8007 | Vector database for semantic search |
 
 ---
 
@@ -341,18 +350,23 @@ docker-compose up -d
 
 ### Port conflicts
 
-If ports 8001-8006 are already in use, edit `docker-compose.yml`:
+If ports are already in use, edit `docker-compose.yml`:
 
 ```yaml
 ports:
-  - "9001:8000"  # Change 8001 to 9001
+  - "9001:8000"  # Change external port (e.g., 8001 to 9001)
 ```
+
+**Port ranges used:**
+- **8001-8007**: Backend services + ChromaDB
+- **3000**: Dashboard web UI
+- **6379**: Redis
 
 ### ChromaDB connection issues
 
 ```bash
 # Check ChromaDB health
-curl http://localhost:8000/api/v1/heartbeat
+curl http://localhost:8007/api/v1/heartbeat
 
 # Restart ChromaDB
 docker-compose restart chromadb
@@ -403,6 +417,8 @@ This deployment uses microservices from:
 - [fm-evidence-service](https://github.com/FaultMaven/fm-evidence-service) - File upload & storage
 - [fm-agent-service](https://github.com/FaultMaven/fm-agent-service) - AI troubleshooting agent (LangGraph + MilestoneEngine)
 - [fm-job-worker](https://github.com/FaultMaven/fm-job-worker) - Background task processing (Celery)
+- [faultmaven-dashboard](https://github.com/FaultMaven/faultmaven-dashboard) - Web UI for knowledge base management (React + Vite)
+- [faultmaven-copilot](https://github.com/FaultMaven/faultmaven-copilot) - Browser extension for interactive troubleshooting
 
 ---
 
