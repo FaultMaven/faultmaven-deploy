@@ -210,8 +210,9 @@ services:
       context: ../faultmaven-dashboard
       dockerfile: Dockerfile
       args:
-        # Dashboard connects to knowledge service for KB management
-        - VITE_API_URL=http://localhost:8004
+        # Dashboard connects to auth service (port 8001) for login
+        # Note: VITE_API_URL is baked into the build at compile time
+        - VITE_API_URL=http://localhost:8001
     container_name: fm-dashboard
     ports:
       - "3000:80"
