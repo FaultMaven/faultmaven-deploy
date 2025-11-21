@@ -162,8 +162,11 @@ curl http://localhost:8005/health  # Evidence Service
 curl http://localhost:8006/health  # Agent Service
 
 # Access web dashboard
-open http://localhost:3000  # Knowledge Base Management Dashboard
+# Replace SERVER_IP with your server's IP address (set in .env as SERVER_HOST)
+open http://SERVER_IP:3000  # Knowledge Base Management Dashboard
+# Example: http://192.168.0.200:3000
 # Login: admin / changeme123 (change password after first login!)
+# Note: Works from any device on your network - most servers are headless!
 ```
 
 Expected health response:

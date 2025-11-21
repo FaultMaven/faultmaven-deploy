@@ -78,6 +78,11 @@ cp .env.example .env
 Edit `.env` and configure:
 
 ```bash
+# IMPORTANT: Set your server's IP address or hostname
+# This is used by the dashboard to connect to backend services
+# Replace with your actual server IP (NOT localhost - that won't work from other devices!)
+SERVER_HOST=192.168.0.200  # Change this to your server's IP
+
 # Required: Add at least one API key
 OPENAI_API_KEY=sk-your-actual-key-here
 
@@ -137,7 +142,11 @@ The wrapper script will:
 
 Once services are running, open your browser:
 
-**Dashboard Login:** http://localhost:3000
+**Dashboard URL:** http://YOUR_SERVER_IP:3000
+
+Replace `YOUR_SERVER_IP` with the IP address you set in `SERVER_HOST`:
+- Example: http://192.168.0.200:3000
+- If accessing from the server itself: http://localhost:3000
 
 ```
 Username: admin
@@ -145,6 +154,12 @@ Password: changeme123
 ```
 
 **⚠️ IMPORTANT:** Change your password immediately after first login! The default credentials are only for initial setup.
+
+**Network Access Note:**
+- Most self-hosted servers run **headless** (no GUI browser)
+- Access the dashboard from **any device** on your network
+- The SERVER_HOST in .env tells the dashboard where to find the backend services
+- Works across your local network, VPN, or firewall zone
 
 **Port Architecture Note:** The Dashboard (port 3000) is your web UI. It connects internally to backend API services (ports 8001-8007) which you don't need to access directly. Everything goes through the dashboard.
 
