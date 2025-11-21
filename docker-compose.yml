@@ -114,8 +114,7 @@ services:
     volumes:
       - ./data:/data
     depends_on:
-      chromadb:
-        condition: service_healthy
+      - chromadb
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
