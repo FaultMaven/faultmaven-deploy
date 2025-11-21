@@ -25,11 +25,8 @@ services:
     environment:
       - ANONYMIZED_TELEMETRY=False
       - ALLOW_RESET=True
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    # No healthcheck: ChromaDB image lacks curl/wget, and service is stable
+    # Services should add retry logic when connecting to ChromaDB
 
   # Core microservices
   fm-auth-service:
