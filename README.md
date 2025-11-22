@@ -66,14 +66,17 @@ cp .env.example .env
 **Required:**
 - **Docker** & **Docker Compose** ([Get Docker](https://docs.docker.com/get-docker/))
 - **8GB RAM** minimum (16GB recommended)
-- **Cloud LLM API Key** - Choose one:
-  - [OpenAI](https://platform.openai.com/api-keys) (GPT-4)
+- **Cloud LLM API Key** - Choose one or more:
+  - [OpenAI](https://platform.openai.com/api-keys) (GPT-4, GPT-3.5)
   - [Anthropic](https://console.anthropic.com/) (Claude)
-  - [Fireworks AI](https://fireworks.ai/api-keys) (Multiple models)
+  - [Groq](https://console.groq.com/) (FREE tier - ultra-fast!)
+  - [Gemini](https://makersuite.google.com/app/apikey) (Google)
+  - [Fireworks AI](https://fireworks.ai/api-keys) (Open source models)
+  - [OpenRouter](https://openrouter.ai/keys) (Multi-provider aggregation)
 
 ### ⚠️ **Critical: Cloud LLM Required**
 
-FaultMaven self-hosted uses **cloud AI providers** (OpenAI/Anthropic/Fireworks) via your API key.
+FaultMaven self-hosted uses **6 cloud AI providers** with automatic fallback via your API key(s).
 
 **Why not run a local LLM like Ollama?**
 - 🚫 Agentic workflows require **70B+ parameter models**

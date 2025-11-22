@@ -31,10 +31,13 @@ That's it! FaultMaven is now running on your laptop.
 ### Required
 - **Docker** & **Docker Compose** installed ([Get Docker](https://docs.docker.com/get-docker/))
 - **8GB RAM** minimum (16GB recommended)
-- **Cloud LLM API Key** - Choose one:
-  - [OpenAI](https://platform.openai.com/api-keys) (GPT-4)
+- **Cloud LLM API Key** - Choose one or more:
+  - [OpenAI](https://platform.openai.com/api-keys) (GPT-4, GPT-3.5)
   - [Anthropic](https://console.anthropic.com/) (Claude)
-  - [Fireworks AI](https://fireworks.ai/api-keys) (Multiple models)
+  - [Groq](https://console.groq.com/) (FREE tier - ultra-fast Llama/Mixtral)
+  - [Gemini](https://makersuite.google.com/app/apikey) (Google)
+  - [Fireworks AI](https://fireworks.ai/api-keys) (Open source models)
+  - [OpenRouter](https://openrouter.ai/keys) (Aggregated access to multiple providers)
 
 ### ⚠️ Important: Cloud LLM Required
 
@@ -102,7 +105,12 @@ DASHBOARD_PASSWORD=changeme123
 **Get API keys:**
 - OpenAI: https://platform.openai.com/api-keys
 - Anthropic: https://console.anthropic.com/
+- Groq: https://console.groq.com/ (FREE tier available!)
+- Gemini: https://makersuite.google.com/app/apikey
 - Fireworks: https://fireworks.ai/api-keys
+- OpenRouter: https://openrouter.ai/keys
+
+**💡 Tip:** Groq offers a generous FREE tier with ultra-fast inference! Great for testing.
 
 **⚠️ Security Note:** The default credentials (`admin`/`changeme123`) are for initial setup only. Change them before deploying anywhere accessible beyond localhost!
 
