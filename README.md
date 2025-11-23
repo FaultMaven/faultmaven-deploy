@@ -297,27 +297,27 @@ docker-compose up -d
 
 ## What's Included
 
-✅ **Complete AI Agent** - Full LangGraph agent with 8 milestones
-✅ **3-Tier RAG System** - Personal KB + Global KB + Case Working Memory
-✅ **All 8 Data Types** - Logs, traces, profiles, metrics, config, code, text, visual
-✅ **SQLite Database** - Zero configuration, single file, portable
-✅ **ChromaDB Vector Search** - Semantic knowledge base retrieval
-✅ **Background Jobs** - Celery + Redis for async processing
-✅ **Local File Storage** - All evidence files stay on your machine
+- ✅ **Complete AI Agent** - Full LangGraph agent with 8 milestones
+- ✅ **3-Tier RAG System** - Personal KB + Global KB + Case Working Memory
+- ✅ **All 8 Data Types** - Logs, traces, profiles, metrics, config, code, text, visual
+- ✅ **SQLite Database** - Zero configuration, single file, portable
+- ✅ **ChromaDB Vector Search** - Semantic knowledge base retrieval
+- ✅ **Background Jobs** - Celery + Redis for async processing
+- ✅ **Local File Storage** - All evidence files stay on your machine
 
 ---
 
 ## What's NOT Included (Enterprise Only)
 
-❌ Team collaboration & case sharing
-❌ SSO/SAML authentication (Google, Okta, Azure AD)
-❌ Multi-tenant organizations & workspaces
-❌ S3 cloud storage & long-term retention
-❌ Advanced analytics dashboards & trend analysis
-❌ ML model management & confidence calibration
-❌ Auto-scaling resources based on demand
-❌ Built-in curated knowledge base
-❌ Professional support & SLA guarantees
+- ❌ Team collaboration & case sharing
+- ❌ SSO/SAML authentication (Google, Okta, Azure AD)
+- ❌ Multi-tenant organizations & workspaces
+- ❌ S3 cloud storage & long-term retention
+- ❌ Advanced analytics dashboards & trend analysis
+- ❌ ML model management & confidence calibration
+- ❌ Auto-scaling resources based on demand
+- ❌ Built-in curated knowledge base
+- ❌ Professional support & SLA guarantees
 
 **Upgrade to Enterprise:** [https://faultmaven.ai/signup](https://faultmaven.ai/signup) *(free tier available for individuals & teams)*
 
@@ -464,7 +464,7 @@ This deployment uses microservices from:
 
 - **[QUICKSTART.md](QUICKSTART.md)** - Detailed setup and usage guide
 - **[Architecture Overview](https://github.com/FaultMaven/FaultMaven/blob/main/docs/ARCHITECTURE.md)** - System design
-- **[ADR-002](https://github.com/FaultMaven/faultmaven-doc-internal/blob/main/architecture/adr/002-self-hosted-feature-scope.md)** - Self-hosted version architecture decisions
+- **[Deployment Guide](https://github.com/FaultMaven/FaultMaven/blob/main/docs/DEPLOYMENT.md)** - Advanced deployment options and configurations
 - **[API Reference](https://github.com/FaultMaven/FaultMaven/blob/main/docs/API.md)** - Complete endpoint documentation
 
 ---
