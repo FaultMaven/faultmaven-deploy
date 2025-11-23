@@ -35,8 +35,6 @@ This repository provides a complete Docker Compose deployment for self-hosting *
 - Collaboration workflows (no case/knowledge sharing)
 - Enterprise compliance needs (no SSO/RBAC)
 
-**For individuals & teams:** Try [FaultMaven Enterprise SaaS](https://faultmaven.ai) with free tier, auto-scaling resources, built-in knowledge base, and managed infrastructure.
-
 ---
 
 ## Quick Start
@@ -307,19 +305,11 @@ docker-compose up -d
 
 ---
 
-## What's NOT Included (Enterprise Only)
+## 🚀 Need Production-Ready Infrastructure?
 
-- ❌ Team collaboration & case sharing
-- ❌ SSO/SAML authentication (Google, Okta, Azure AD)
-- ❌ Multi-tenant organizations & workspaces
-- ❌ S3 cloud storage & long-term retention
-- ❌ Advanced analytics dashboards & trend analysis
-- ❌ ML model management & confidence calibration
-- ❌ Auto-scaling resources based on demand
-- ❌ Built-in curated knowledge base
-- ❌ Professional support & SLA guarantees
-
-**Upgrade to Enterprise:** [https://faultmaven.ai/signup](https://faultmaven.ai/signup) *(free tier available for individuals & teams)*
+> **Self-hosted is single-user only.** For production use, try **[FaultMaven Managed SaaS](https://github.com/FaultMaven/FaultMaven#2-managed-saas)** — available **for free** for individuals and teams.
+>
+> Get elastic resource management, optimized performance, and enterprise-grade features. **[Learn More →](https://github.com/FaultMaven/FaultMaven#2-managed-saas)**
 
 ---
 
