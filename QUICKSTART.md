@@ -29,9 +29,12 @@ That's it! FaultMaven is now running on your laptop.
 ## Prerequisites
 
 ### Required
+
 - **Docker** & **Docker Compose** installed ([Get Docker](https://docs.docker.com/get-docker/))
-- **8GB RAM** minimum (16GB recommended)
-- **Cloud LLM API Key** - Choose one or more:
+- **8GB RAM** minimum (16GB recommended for local LLM)
+- **LLM Provider** - Choose one option:
+
+  **Option 1: Cloud LLM (Recommended for best performance)**
   - [OpenAI](https://platform.openai.com/api-keys) (GPT-4, GPT-3.5)
   - [Anthropic](https://console.anthropic.com/) (Claude)
   - [Groq](https://console.groq.com/) (FREE tier - ultra-fast Llama/Mixtral)
@@ -39,27 +42,49 @@ That's it! FaultMaven is now running on your laptop.
   - [Fireworks AI](https://fireworks.ai/api-keys) (Open source models)
   - [OpenRouter](https://openrouter.ai/keys) (Aggregated access to multiple providers)
 
-### ⚠️ Important: Cloud LLM Required
+  **Option 2: Local LLM (FREE, private, runs on your machine)**
+  - [Ollama](https://ollama.ai/) (easiest setup)
+  - [LM Studio](https://lmstudio.ai/) (GUI interface)
+  - [LocalAI](https://localai.io/) (advanced users)
+  - [vLLM](https://github.com/vllm-project/vllm) (production-grade)
 
-FaultMaven self-hosted uses **your choice of cloud AI providers** via API.
+### 🎯 LLM Configuration Guide
 
-**Why not a local LLM like Ollama?**
-- Local LLM (Llama 70B+) requires **32GB+ RAM** and a **dedicated GPU**
-- Inference speed would be too slow for interactive troubleshooting
-- Cloud APIs provide **better quality** and **faster responses**
-- Agentic complexity typically fails on smaller local models
+FaultMaven gives you **full flexibility** in LLM choice - cloud, local, or hybrid.
 
-**Cost estimate:** $0.10-$0.50 per troubleshooting session (using GPT-4) - cheaper than running GPU hardware.
+**Cloud LLM (Best Performance):**
 
-**What runs locally:**
+- Fastest response times (1-2 seconds)
+- Best quality for complex reasoning
+- Pay per use ($0.10-$0.50 per session with GPT-4)
+- No local GPU required
+
+**Local LLM (FREE & Private):**
+
+- Zero API costs (runs on your hardware)
+- 100% private (no data leaves your machine)
+- Works offline
+- Slower inference (5-15 seconds depending on hardware)
+- Best with 16GB+ RAM and GPU acceleration
+
+**Hybrid Setup (Best of Both Worlds):**
+
+- Cloud LLM for complex diagnostics (quality + speed)
+- Local LLM for knowledge base queries (free + private)
+- See Advanced Configuration below
+
+**What runs locally (always):**
+
 - ✅ All services (case management, evidence storage, etc.)
 - ✅ ChromaDB vector database
 - ✅ Redis session store
 - ✅ SQLite data storage
 
-**What uses cloud:**
-- ☁️ LLM inference only (via your API key)
-- ☁️ No FaultMaven tracking or data collection
+**What varies:**
+
+- ☁️ **Cloud LLM:** Inference via API (only prompts/responses sent)
+- 🖥️ **Local LLM:** Everything runs on your machine
+- 🔐 **No FaultMaven tracking or data collection in either case**
 
 ---
 
@@ -86,14 +111,27 @@ Edit `.env` and configure:
 # Replace with your actual server IP (NOT localhost - that won't work from other devices!)
 SERVER_HOST=192.168.0.200  # Change this to your server's IP
 
-# Required: Add at least one API key
+# =============================================================================
+# LLM Provider Configuration - Choose ONE option below
+# =============================================================================
+
+# Option 1: Cloud LLM (recommended for best performance)
 OPENAI_API_KEY=sk-your-actual-key-here
 
-# Optional: Add more providers for fallback
+# Option 2: Local LLM (FREE, private, runs locally)
+# Requires Ollama installed and running (see setup below)
+# LOCAL_LLM_API_KEY=not-needed
+# LOCAL_LLM_URL=http://localhost:11434/v1
+# LOCAL_LLM_MODEL=llama3.1
+
+# Optional: Add more cloud providers for fallback
 # ANTHROPIC_API_KEY=sk-ant-...
+# GROQ_API_KEY=gsk_...
 # FIREWORKS_API_KEY=fw_...
 
-# Simple Authentication (Self-Hosted)
+# =============================================================================
+# Authentication (Self-Hosted)
+# =============================================================================
 # IMPORTANT: Change these default credentials!
 DASHBOARD_USERNAME=admin
 DASHBOARD_PASSWORD=changeme123
@@ -102,15 +140,71 @@ DASHBOARD_PASSWORD=changeme123
 # DEFAULT_USER_TOKEN=my-secret-token
 ```
 
-**Get API keys:**
-- OpenAI: https://platform.openai.com/api-keys
-- Anthropic: https://console.anthropic.com/
-- Groq: https://console.groq.com/ (FREE tier available!)
-- Gemini: https://makersuite.google.com/app/apikey
-- Fireworks: https://fireworks.ai/api-keys
-- OpenRouter: https://openrouter.ai/keys
+**Cloud LLM Setup - Get API keys:**
+
+- OpenAI: <https://platform.openai.com/api-keys>
+- Anthropic: <https://console.anthropic.com/>
+- Groq: <https://console.groq.com/> (FREE tier available!)
+- Gemini: <https://makersuite.google.com/app/apikey>
+- Fireworks: <https://fireworks.ai/api-keys>
+- OpenRouter: <https://openrouter.ai/keys>
 
 **💡 Tip:** Groq offers a generous FREE tier with ultra-fast inference! Great for testing.
+
+**Local LLM Setup - Using Ollama (easiest method):**
+
+```bash
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Start Ollama server (in separate terminal)
+ollama serve
+
+# Pull a model (choose one)
+ollama pull llama3.1      # Recommended: balanced quality/speed (4.7GB)
+ollama pull llama3.1:70b  # Better quality, slower (40GB, requires 32GB+ RAM)
+ollama pull mistral       # Faster, smaller (4.1GB)
+
+# Configure FaultMaven to use Ollama
+# In your .env file, uncomment and set:
+# LOCAL_LLM_API_KEY=not-needed
+# LOCAL_LLM_URL=http://localhost:11434/v1
+# LOCAL_LLM_MODEL=llama3.1
+```
+
+**Local LLM Setup - Using LM Studio (GUI alternative):**
+
+1. Download LM Studio from <https://lmstudio.ai/>
+2. Launch LM Studio and download a model (e.g., "Llama 3.1 8B")
+3. Click "Start Server" (default port 1234)
+4. Configure FaultMaven:
+
+   ```bash
+   LOCAL_LLM_API_KEY=not-needed
+   LOCAL_LLM_URL=http://localhost:1234/v1
+   LOCAL_LLM_MODEL=llama-3.1-8b-instruct
+   ```
+
+**Advanced: Hybrid Setup (Mix Cloud + Local)**
+
+Use cloud LLM for chat, local LLM for knowledge base queries (cost optimization):
+
+```bash
+# Cloud provider for complex diagnostics
+OPENAI_API_KEY=sk-...
+
+# Local LLM for knowledge base (free!)
+LOCAL_LLM_API_KEY=not-needed
+LOCAL_LLM_URL=http://localhost:11434/v1
+LOCAL_LLM_MODEL=llama3.1
+
+# Task-specific routing
+CHAT_PROVIDER=openai
+CHAT_MODEL=gpt-4o
+
+SYNTHESIS_PROVIDER=local
+SYNTHESIS_MODEL=llama3.1
+```
 
 **⚠️ Security Note:** The default credentials (`admin`/`changeme123`) are for initial setup only. Change them before deploying anywhere accessible beyond localhost!
 
@@ -443,10 +537,16 @@ ports:
 ## FAQ
 
 **Q: Can I use Ollama or other local LLMs?**
-A: Not recommended. Agentic workflows require large models (70B+ parameters) that need 32GB+ RAM and GPU. Cloud APIs are faster and cheaper.
+A: **Yes!** FaultMaven now supports local LLMs (Ollama, LM Studio, LocalAI, vLLM) as a first-class option. Local LLMs are FREE, private, and work offline. They're slower than cloud APIs but perfect for tinkering, privacy-first deployments, or hybrid setups where you use local LLM for knowledge base queries and cloud for complex diagnostics.
+
+**Q: Which is better - cloud or local LLM?**
+A: **Cloud LLM** for best performance (1-2s response, highest quality). **Local LLM** for zero cost and privacy (5-15s response, good quality). **Hybrid** for best of both worlds (cloud for chat, local for knowledge base).
+
+**Q: What are the hardware requirements for local LLM?**
+A: Minimum 8GB RAM for small models (Llama 3.1 8B, Mistral). Recommended 16GB+ RAM for better performance. GPU acceleration (NVIDIA/AMD/Apple Silicon) significantly speeds up inference. 70B+ parameter models need 32GB+ RAM.
 
 **Q: Is my data sent to FaultMaven servers?**
-A: No. All data stays on your laptop. Only LLM API calls go to your chosen provider (OpenAI/Anthropic/Fireworks).
+A: No. All data stays on your laptop. With **cloud LLM**, only prompts/responses go to your chosen provider (OpenAI/Anthropic/etc). With **local LLM**, everything runs on your machine - zero external calls.
 
 **Q: Can I run this in production?**
 A: Self-hosted is for **single-user development/testing only**. For production (individuals or teams), use [Enterprise SaaS](https://faultmaven.ai/signup) with auto-scaling, built-in knowledge base, HA PostgreSQL, S3 storage, and 99.9% SLA.

@@ -74,18 +74,39 @@ cp .env.example .env
   - [Fireworks AI](https://fireworks.ai/api-keys) (Open source models)
   - [OpenRouter](https://openrouter.ai/keys) (Multi-provider aggregation)
 
-### ⚠️ **Critical: Cloud LLM Required**
+### 🎯 **LLM Provider Options**
 
-FaultMaven self-hosted uses **6 cloud AI providers** with automatic fallback via your API key(s).
+FaultMaven self-hosted supports **7 LLM providers** with automatic fallback:
 
-**Why not run a local LLM like Ollama?**
-- 🚫 Agentic workflows require **70B+ parameter models**
-- 🚫 Local LLMs need **32GB+ RAM + dedicated GPU**
-- 🚫 Inference would be too slow for interactive troubleshooting
-- ✅ Cloud APIs provide **better quality** and **faster responses**
-- ✅ Cost: **$0.10-$0.50 per session** (cheaper than GPU hardware)
+- **6 Cloud providers**: OpenAI, Anthropic, Groq, Gemini, Fireworks, OpenRouter
+- **1 Local option**: Ollama, LM Studio, LocalAI, vLLM
 
-**What runs locally:**
+**Choose your deployment model:**
+
+#### Option 1: Cloud LLM (Recommended for best performance)
+
+- ✅ Fastest response times (1-2 seconds)
+- ✅ Best quality for complex reasoning
+- ✅ No local hardware requirements
+- 💰 Cost: $0.10-$0.50 per troubleshooting session
+
+#### Option 2: Local LLM (FREE, privacy-first)
+
+- ✅ Zero API costs (runs on your hardware)
+- ✅ 100% private (no data leaves your machine)
+- ✅ Works offline
+- ⚙️ Hardware: 8GB+ RAM for small models, 16GB+ recommended
+- ⚙️ GPU acceleration recommended for best performance
+- ⏱️ Slower inference (5-15 seconds vs 1-2 seconds)
+
+#### Option 3: Hybrid (Best of both worlds)
+
+- ✅ Cloud LLM for complex diagnostics (quality + speed)
+- ✅ Local LLM for knowledge base queries (free + private)
+- ✅ Cost optimization: 10x+ savings on high-volume RAG queries
+
+**What runs locally (always):**
+
 - ✅ All 6 microservices (auth, case, evidence, knowledge, agent, session)
 - ✅ Dashboard web UI for knowledge base management
 - ✅ Background job workers (Celery)
@@ -94,9 +115,11 @@ FaultMaven self-hosted uses **6 cloud AI providers** with automatic fallback via
 - ✅ SQLite data storage
 - ✅ All your sensitive data stays on your machine
 
-**What uses cloud:**
-- ☁️ **LLM inference only** (via your API key)
-- ☁️ **No FaultMaven tracking** or data collection
+**What varies by LLM choice:**
+
+- ☁️ **Cloud LLM**: Inference via API (only prompts/responses sent, no tracking)
+- 🖥️ **Local LLM**: Everything runs locally (zero external calls)
+- 🔀 **Hybrid**: Smart routing based on task type
 
 **Your data never leaves your laptop** - only anonymous prompts/responses go to the LLM provider you choose.
 
