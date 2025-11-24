@@ -274,7 +274,7 @@ From the dashboard you can:
 **Browser Extension:** For real-time chat troubleshooting, install the browser extension:
 - **Chrome/Edge**: Clone [faultmaven-copilot](https://github.com/FaultMaven/faultmaven-copilot) and load as unpacked extension ([instructions](https://github.com/FaultMaven/faultmaven-copilot#installation))
 - **Firefox**: Build instructions in the repository README
-- The extension connects to the same backend services (localhost:8001-8006)
+- The extension connects to the API Gateway (localhost:8090)
 
 ---
 
@@ -323,31 +323,37 @@ Expected output:
 
 Service Status:
 NAME                    STATUS              PORTS
-fm-auth-service         Up (healthy)        0.0.0.0:8001->8001/tcp
-fm-case-service         Up (healthy)        0.0.0.0:8003->8003/tcp
-fm-knowledge-service    Up (healthy)        0.0.0.0:8004->8004/tcp
-fm-agent-service        Up (healthy)        0.0.0.0:8006->8006/tcp
+fm-api-gateway          Up (healthy)        0.0.0.0:8090->8090/tcp
+fm-auth-service         Up (healthy)        0.0.0.0:8001->8000/tcp
+fm-case-service         Up (healthy)        0.0.0.0:8003->8000/tcp
+fm-knowledge-service    Up (healthy)        0.0.0.0:8004->8000/tcp
+fm-agent-service        Up (healthy)        0.0.0.0:8006->8000/tcp
 ...
 
 Health Checks:
+✓ API Gateway (port 8090)
 ✓ Auth Service (port 8001)
 ✓ Session Service (port 8002)
 ✓ Case Service (port 8003)
 ✓ Knowledge Service (port 8004)
 ✓ Evidence Service (port 8005)
 ✓ Agent Service (port 8006)
-✓ API Gateway (port 8090)
 ```
 
 ### Access API Documentation
 
+All APIs are accessible through the API Gateway:
+
 | Service | Swagger UI |
 |---------|-----------|
-| **Agent Service** | http://localhost:8006/docs |
-| **Case Service** | http://localhost:8003/docs |
-| **Knowledge Service** | http://localhost:8004/docs |
-| **Auth Service** | http://localhost:8001/docs |
-| **Evidence Service** | http://localhost:8005/docs |
+| **API Gateway** | http://localhost:8090/docs |
+
+For direct service access (debugging only):
+- Auth Service: http://localhost:8001/docs
+- Case Service: http://localhost:8003/docs
+- Knowledge Service: http://localhost:8004/docs
+- Agent Service: http://localhost:8006/docs
+- Evidence Service: http://localhost:8005/docs
 
 ---
 
@@ -358,14 +364,16 @@ Health Checks:
 **Coming Soon:** Install `faultmaven-copilot` from Chrome Web Store or Firefox Add-ons.
 
 Configure extension settings:
-- API Endpoint: `http://localhost:8006`
+- API Endpoint: `http://localhost:8090` (API Gateway)
 
 ### Option 2: Direct API Calls
+
+All API calls go through the API Gateway on port 8090:
 
 #### Create a troubleshooting case:
 
 ```bash
-curl -X POST http://localhost:8003/api/v1/cases \
+curl -X POST http://localhost:8090/api/v1/cases \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Production API latency spike",
@@ -377,7 +385,7 @@ curl -X POST http://localhost:8003/api/v1/cases \
 #### Upload evidence:
 
 ```bash
-curl -X POST http://localhost:8005/api/v1/evidence \
+curl -X POST http://localhost:8090/api/v1/evidence \
   -F "file=@/path/to/error.log" \
   -F "case_id=case_abc123" \
   -F "evidence_type=log"
@@ -386,7 +394,7 @@ curl -X POST http://localhost:8005/api/v1/evidence \
 #### Query AI agent:
 
 ```bash
-curl -X POST http://localhost:8006/api/v1/agent/query \
+curl -X POST http://localhost:8090/api/v1/agent/query \
   -H "Content-Type: application/json" \
   -d '{
     "case_id": "case_abc123",
@@ -463,11 +471,12 @@ You have less than 8GB available. Options:
 
 ### Port conflicts
 
-If ports 8001-8006 are already in use, edit `docker-compose.yml`:
+If ports 8001-8007 or 8090 are already in use, edit `docker-compose.yml`:
 
 ```yaml
 ports:
-  - "9001:8001"  # Change external port to 9001
+  - "9090:8090"  # Change API Gateway external port
+  - "9001:8000"  # Change service external port (internal stays 8000)
 ```
 
 ### Docker daemon not running
@@ -527,7 +536,7 @@ ports:
 
 ## Next Steps
 
-1. **Explore the API:** Open http://localhost:8006/docs and try the interactive API
+1. **Explore the API:** Open http://localhost:8090/docs and try the interactive API Gateway
 2. **Read architecture docs:** Understand how FaultMaven works ([ARCHITECTURE.md](./ARCHITECTURE.md))
 3. **Join community:** [GitHub Discussions](https://github.com/FaultMaven/faultmaven-deploy/discussions)
 4. **Report issues:** [GitHub Issues](https://github.com/FaultMaven/faultmaven-deploy/issues)

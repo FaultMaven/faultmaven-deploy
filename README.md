@@ -9,7 +9,11 @@
 
 ## Overview
 
-This repository provides a complete Docker Compose deployment for self-hosting **FaultMaven**, an AI-powered troubleshooting platform with:
+This repository provides a complete Docker Compose deployment for self-hosting **FaultMaven**, an AI-powered troubleshooting platform.
+
+**📖 For architectural details and contributing:** See the main [FaultMaven](https://github.com/FaultMaven/FaultMaven) repository.
+
+**What you get with self-hosted deployment:**
 
 - 🤖 **Complete AI Agent** - Full LangGraph agent with milestone-based investigation
 - 📚 **3-Tier RAG System** - Personal KB + Global KB + Case Working Memory
@@ -105,9 +109,9 @@ FaultMaven self-hosted supports **7 LLM providers** with automatic fallback:
 
 **What runs locally (always):**
 
-- ✅ All 6 microservices (auth, case, evidence, knowledge, agent, session)
-- ✅ Dashboard web UI for knowledge base management
-- ✅ Background job workers (Celery)
+- ✅ 7 microservices: auth, session, case, knowledge, evidence, agent, API gateway
+- ✅ Dashboard web UI for Global KB management
+- ✅ 2 background workers: Celery worker + Celery Beat scheduler
 - ✅ ChromaDB vector database
 - ✅ Redis session store
 - ✅ SQLite data storage
@@ -216,12 +220,18 @@ Expected health response:
 │  Browser Extension (UI)  │    Dashboard Web UI (Port 3000)   │
 │  faultmaven-copilot      │    faultmaven-dashboard           │
 │  • Real-time chat        │    • Login/Authentication         │
-│  • Interactive Q&A       │    • Knowledge Base management    │
+│  • Interactive Q&A       │    • Global KB management         │
 │  • Evidence upload       │    • Document upload              │
 └────────────┬─────────────┴──────────────┬────────────────────┘
              │                            │
              │           HTTP API         │
              ▼                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    API Gateway (Port 8090)                   │
+│              Main entry point for all requests               │
+└─────────┬───────────┬───────────┬──────────┬───────┬────────┘
+          │           │           │          │       │
+          ▼           ▼           ▼          ▼       ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              Backend Microservices (Ports 8001-8006)         │
 ├─────────┬───────────┬───────────┬──────────┬───────┬────────┤
@@ -249,13 +259,14 @@ Expected health response:
 
 | Service | Port | Description |
 |---------|------|-------------|
+| **API Gateway** | 8090 | Main entry point for all client requests |
 | **Auth Service** | 8001 | User authentication (JWT, Redis sessions) |
 | **Session Service** | 8002 | Session management with Redis |
 | **Case Service** | 8003 | Case lifecycle & milestone tracking |
 | **Knowledge Service** | 8004 | 3-tier RAG knowledge base (ChromaDB + BGE-M3) |
 | **Evidence Service** | 8005 | File uploads (logs, screenshots, configs) |
 | **Agent Service** | 8006 | AI troubleshooting agent (LangGraph + MilestoneEngine) |
-| **Dashboard** | 3000 | Web UI for knowledge base management (React + Nginx) |
+| **Dashboard** | 3000 | Web UI for Global KB management (React + Vite) |
 | **Job Worker** | - | Background tasks (Celery + Redis) |
 | **Job Worker Beat** | - | Celery task scheduler |
 | **Redis** | 6379 | Session storage & task queue |
@@ -386,7 +397,8 @@ ports:
 ```
 
 **Port ranges used:**
-- **8001-8007**: Backend services + ChromaDB
+- **8001-8007**: Backend microservices + ChromaDB
+- **8090**: API Gateway (main entry point)
 - **3000**: Dashboard web UI
 - **6379**: Redis
 
@@ -444,8 +456,9 @@ This deployment uses microservices from:
 - [fm-knowledge-service](https://github.com/FaultMaven/fm-knowledge-service) - 3-tier RAG knowledge base (ChromaDB)
 - [fm-evidence-service](https://github.com/FaultMaven/fm-evidence-service) - File upload & storage
 - [fm-agent-service](https://github.com/FaultMaven/fm-agent-service) - AI troubleshooting agent (LangGraph + MilestoneEngine)
+- [fm-api-gateway](https://github.com/FaultMaven/fm-api-gateway) - API Gateway (main entry point for all requests)
 - [fm-job-worker](https://github.com/FaultMaven/fm-job-worker) - Background task processing (Celery)
-- [faultmaven-dashboard](https://github.com/FaultMaven/faultmaven-dashboard) - Web UI for knowledge base management (React + Vite)
+- [faultmaven-dashboard](https://github.com/FaultMaven/faultmaven-dashboard) - Web UI for Global KB management (React + Vite)
 - [faultmaven-copilot](https://github.com/FaultMaven/faultmaven-copilot) - Browser extension for interactive troubleshooting
 
 ---

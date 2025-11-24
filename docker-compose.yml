@@ -210,10 +210,10 @@ services:
       context: ../faultmaven-dashboard
       dockerfile: Dockerfile
       args:
-        # Dashboard connects to auth service (port 8001) for login
+        # Dashboard connects to API Gateway (port 8090) for all requests
         # Note: VITE_API_URL is baked into the build at compile time
         # Use SERVER_HOST from .env for network access (NOT localhost!)
-        - VITE_API_URL=http://${SERVER_HOST:-192.168.0.200}:8001
+        - VITE_API_URL=http://${SERVER_HOST:-192.168.0.200}:8090
     container_name: fm-dashboard
     ports:
       - "3000:80"
@@ -226,21 +226,40 @@ services:
       timeout: 3s
       retries: 3
 
-  # API Gateway (optional - for future use)
-  # fm-api-gateway:
-  #   build:
-  #     context: ./fm-api-gateway
-  #     dockerfile: Dockerfile
-  #   container_name: fm-api-gateway
-  #   ports:
-  #     - "8090:8000"
-  #   environment:
-  #     - AUTH_SERVICE_URL=http://fm-auth-service:8000
-  #     - SESSION_SERVICE_URL=http://fm-session-service:8000
-  #     - CASE_SERVICE_URL=http://fm-case-service:8000
-  #     - KNOWLEDGE_SERVICE_URL=http://fm-knowledge-service:8000
-  #     - EVIDENCE_SERVICE_URL=http://fm-evidence-service:8000
-  #     - AGENT_SERVICE_URL=http://fm-agent-service:8000
+  # API Gateway - Single entry point for all client requests
+  fm-api-gateway:
+    build:
+      context: ../fm-api-gateway
+      dockerfile: Dockerfile
+    container_name: fm-api-gateway
+    ports:
+      - "8090:8090"
+    environment:
+      - PROFILE=public
+      - AUTH_SERVICE_URL=http://fm-auth-service:8000
+      - SESSION_SERVICE_URL=http://fm-session-service:8000
+      - CASE_SERVICE_URL=http://fm-case-service:8000
+      - KNOWLEDGE_SERVICE_URL=http://fm-knowledge-service:8000
+      - EVIDENCE_SERVICE_URL=http://fm-evidence-service:8000
+      - AGENT_SERVICE_URL=http://fm-agent-service:8000
+    depends_on:
+      fm-auth-service:
+        condition: service_healthy
+      fm-session-service:
+        condition: service_healthy
+      fm-case-service:
+        condition: service_healthy
+      fm-knowledge-service:
+        condition: service_healthy
+      fm-evidence-service:
+        condition: service_healthy
+      fm-agent-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   redis-data:
