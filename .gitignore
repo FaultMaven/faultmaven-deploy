@@ -1,6 +1,9 @@
 # Environment
 .env
 
+# Docker Compose overrides (auto-generated, user-specific)
+docker-compose.override.yml
+
 # Data directory (SQLite, uploads, etc.)
 /data/
 
