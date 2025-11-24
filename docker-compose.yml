@@ -236,12 +236,14 @@ services:
       - "8090:8090"
     environment:
       - PROFILE=public
-      - AUTH_SERVICE_URL=http://fm-auth-service:8000
-      - SESSION_SERVICE_URL=http://fm-session-service:8000
-      - CASE_SERVICE_URL=http://fm-case-service:8000
-      - KNOWLEDGE_SERVICE_URL=http://fm-knowledge-service:8000
-      - EVIDENCE_SERVICE_URL=http://fm-evidence-service:8000
-      - AGENT_SERVICE_URL=http://fm-agent-service:8000
+      - FM_AUTH_SERVICE_URL=http://fm-auth-service:8000
+      - FM_SESSION_SERVICE_URL=http://fm-session-service:8000
+      - FM_CASE_SERVICE_URL=http://fm-case-service:8000
+      - FM_KNOWLEDGE_SERVICE_URL=http://fm-knowledge-service:8000
+      - FM_EVIDENCE_SERVICE_URL=http://fm-evidence-service:8000
+      - FM_AGENT_SERVICE_URL=http://fm-agent-service:8000
+      # Investigation service not yet deployed - aggregator will skip gracefully
+      # - FM_INVESTIGATION_SERVICE_URL=http://fm-investigation-service:8000
     depends_on:
       fm-auth-service:
         condition: service_healthy
