@@ -51,9 +51,10 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
+      start_period: 40s
 
   fm-session-service:
     build:
@@ -72,9 +73,10 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
+      start_period: 40s
 
   fm-case-service:
     build:
@@ -96,9 +98,10 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
+      start_period: 40s
 
   fm-knowledge-service:
     build:
@@ -119,9 +122,10 @@ services:
       - chromadb
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
+      start_period: 40s
 
   fm-evidence-service:
     build:
@@ -140,9 +144,10 @@ services:
       - ./data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
+      start_period: 40s
 
   fm-agent-service:
     build:
@@ -158,9 +163,17 @@ services:
       - KNOWLEDGE_SERVICE_URL=http://fm-knowledge-service:8000
       - CASE_SERVICE_URL=http://fm-case-service:8000
       - EVIDENCE_SERVICE_URL=http://fm-evidence-service:8000
+      # LLM Provider API Keys (configure at least one in .env)
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - FIREWORKS_API_KEY=${FIREWORKS_API_KEY}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - LOCAL_LLM_API_KEY=${LOCAL_LLM_API_KEY}
+      - LOCAL_LLM_URL=${LOCAL_LLM_URL}
+      - LOCAL_LLM_MODEL=${LOCAL_LLM_MODEL}
     volumes:
       - ./data:/data
     depends_on:
@@ -169,9 +182,10 @@ services:
       - fm-case-service
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
+      start_period: 40s
 
   # Job processing
   fm-job-worker:
@@ -220,9 +234,10 @@ services:
       - fm-auth-service
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
-      interval: 30s
-      timeout: 3s
+      interval: 10s
+      timeout: 5s
       retries: 3
+      start_period: 40s
 
   # API Gateway - Single entry point for all client requests
   fm-api-gateway:
