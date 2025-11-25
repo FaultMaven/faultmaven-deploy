@@ -278,15 +278,15 @@ cmd_start() {
 
     if docker compose up -d --build; then
         echo ""
-        print_info "Waiting for services to become healthy (up to 90 seconds)..."
+        print_info "Waiting for services to become healthy (up to 120 seconds)..."
         echo ""
 
         # Wait for services to pass health checks
-        # Our health checks need: 40s start_period + 30s (3x10s checks) = 70s total
-        # Add 20s buffer for slower systems = 90s timeout
+        # Our health checks need: 40s start_period + 60s (3x30s checks) = 100s total
+        # Add 20s buffer for slower systems = 120s timeout
         sleep 5  # Give containers time to start
 
-        max_wait=90
+        max_wait=120
         elapsed=0
         all_healthy=false
 
