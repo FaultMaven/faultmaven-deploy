@@ -201,6 +201,12 @@ services:
       redis:
         condition: service_healthy
     command: ["celery", "-A", "job_worker.celery_app", "worker", "--loglevel=info", "--concurrency=4"]
+    healthcheck:
+      test: ["CMD", "celery", "-A", "job_worker.celery_app", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   fm-job-worker-beat:
     build:
@@ -215,6 +221,12 @@ services:
       redis:
         condition: service_healthy
     command: ["celery", "-A", "job_worker.celery_app", "beat", "--loglevel=info"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; exit(0 if os.path.exists('/app/celerybeat-schedule') else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   # Dashboard - Knowledge Base Management UI
   fm-dashboard:
