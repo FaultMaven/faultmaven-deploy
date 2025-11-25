@@ -292,9 +292,10 @@ cmd_start() {
 
         while [ $elapsed -lt $max_wait ]; do
             # Check if all services with health checks are healthy
-            unhealthy=$(docker compose ps --format json | jq -r 'select(.Health == "unhealthy") | .Name' | wc -l)
+            # Count services that are NOT healthy (either unhealthy or starting)
+            not_healthy=$(docker compose ps --format json | jq -r 'select(.Health != null and .Health != "healthy") | .Name' | wc -l)
 
-            if [ "$unhealthy" -eq 0 ]; then
+            if [ "$not_healthy" -eq 0 ]; then
                 all_healthy=true
                 break
             fi
