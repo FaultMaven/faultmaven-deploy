@@ -278,16 +278,53 @@ cmd_start() {
 
     if docker compose up -d --build; then
         echo ""
-        print_success "FaultMaven services started!"
+        print_info "Waiting for services to become healthy (up to 90 seconds)..."
         echo ""
-        echo "Next steps:"
-        echo "  1. Check status:  ./faultmaven status"
-        echo "  2. View logs:     ./faultmaven logs"
-        echo "  3. Access services:"
-        echo "     - Agent:      http://localhost:8006/docs"
-        echo "     - Case:       http://localhost:8003/docs"
-        echo "     - Knowledge:  http://localhost:8004/docs"
+
+        # Wait for services to pass health checks
+        # Our health checks need: 40s start_period + 30s (3x10s checks) = 70s total
+        # Add 20s buffer for slower systems = 90s timeout
+        sleep 5  # Give containers time to start
+
+        max_wait=90
+        elapsed=0
+        all_healthy=false
+
+        while [ $elapsed -lt $max_wait ]; do
+            # Check if all services with health checks are healthy
+            unhealthy=$(docker compose ps --format json | jq -r 'select(.Health == "unhealthy") | .Name' | wc -l)
+
+            if [ "$unhealthy" -eq 0 ]; then
+                all_healthy=true
+                break
+            fi
+
+            echo -n "."
+            sleep 5
+            elapsed=$((elapsed + 5))
+        done
+
         echo ""
+
+        if [ "$all_healthy" = true ]; then
+            echo ""
+            print_success "FaultMaven services started successfully!"
+            echo ""
+            echo "Next steps:"
+            echo "  1. Check status:  ./faultmaven status"
+            echo "  2. View logs:     ./faultmaven logs"
+            echo "  3. Access services:"
+            echo "     - API Gateway: http://$SERVER_HOST:8090/docs"
+            echo "     - Dashboard:   http://$SERVER_HOST:3000"
+            echo ""
+        else
+            echo ""
+            print_warning "Services started but some are still initializing"
+            echo ""
+            echo "This is normal - services need 60-90 seconds to become fully healthy."
+            echo "Run './faultmaven status' in 30 seconds to verify all services are up."
+            echo ""
+        fi
     else
         echo ""
         print_error "Failed to start services"
