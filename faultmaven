@@ -161,6 +161,10 @@ check_env_file() {
         has_api_key=true
         primary_provider="Fireworks"
     fi
+    if [ -n "$HUGGINGFACE_API_KEY" ] && [ -z "$primary_provider" ]; then
+        has_api_key=true
+        primary_provider="HuggingFace"
+    fi
     if [ -n "$OPENROUTER_API_KEY" ] && [ -z "$primary_provider" ]; then
         has_api_key=true
         primary_provider="OpenRouter"
@@ -176,9 +180,10 @@ check_env_file() {
         echo "Edit .env and configure AT LEAST ONE provider:"
         echo "  OPENAI_API_KEY=sk-...              # OpenAI GPT"
         echo "  ANTHROPIC_API_KEY=sk-ant-...       # Anthropic Claude"
-        echo "  GROQ_API_KEY=gsk-...               # Groq (FREE tier)"
+        echo "  GROQ_API_KEY=gsk-...               # Groq (FREE tier, ultra-fast!)"
         echo "  GEMINI_API_KEY=AIza...             # Google Gemini"
         echo "  FIREWORKS_API_KEY=fw_...           # Fireworks AI"
+        echo "  HUGGINGFACE_API_KEY=hf_...         # HuggingFace (FREE, cold starts)"
         echo "  OPENROUTER_API_KEY=sk-or-...       # OpenRouter"
         echo "  LOCAL_LLM_API_KEY=not-needed       # Local (Ollama/LocalAI)"
         echo ""
