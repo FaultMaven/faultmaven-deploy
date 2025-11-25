@@ -236,8 +236,8 @@ services:
       args:
         # Dashboard connects to API Gateway (port 8090) for all requests
         # Note: VITE_API_URL is baked into the build at compile time
-        # Use SERVER_HOST from .env for network access (NOT localhost!)
-        - VITE_API_URL=http://${SERVER_HOST:-192.168.0.200}:8090
+        # Use SERVER_HOST from .env for network access (required for non-localhost deployments)
+        - VITE_API_URL=http://${SERVER_HOST}:8090
     container_name: fm-dashboard
     ports:
       - "3000:80"
@@ -269,6 +269,9 @@ services:
       - FM_AGENT_SERVICE_URL=http://fm-agent-service:8000
       # Investigation service not yet deployed - aggregator will skip gracefully
       # - FM_INVESTIGATION_SERVICE_URL=http://fm-investigation-service:8000
+      # CORS origins - allows dashboard access from any deployment (localhost, LAN IP, domain)
+      # Uses SERVER_HOST from .env to support network access (required for non-localhost deployments)
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://${SERVER_HOST}:3000
     depends_on:
       fm-auth-service:
         condition: service_healthy
