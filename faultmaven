@@ -119,35 +119,62 @@ check_env_file() {
             cp .env.example .env
             print_success ".env file created"
             echo ""
-            print_warning "ACTION REQUIRED: Add your API key to .env file"
+            print_error "ACTION REQUIRED: Configure .env file before starting"
             echo ""
-            echo "Edit .env and set one of:"
-            echo "  OPENAI_API_KEY=sk-..."
-            echo "  ANTHROPIC_API_KEY=sk-ant-..."
-            echo "  FIREWORKS_API_KEY=fw_..."
+            echo "Edit .env and set these REQUIRED variables:"
+            echo "  1. OPENAI_API_KEY=sk-... (or another LLM provider)"
+            echo "  2. SERVER_HOST=192.168.x.x (your server's IP address)"
             echo ""
-            read -p "Press Enter after you've added your API key..."
+            echo "Then run: ./faultmaven start"
+            exit 1
         else
             print_error ".env.example not found"
             exit 1
         fi
     fi
 
-    # Check if API key is configured
-    if grep -q "OPENAI_API_KEY=sk-\.\.\." .env && \
-       grep -q "# ANTHROPIC_API_KEY=sk-ant-\.\.\." .env && \
-       grep -q "# FIREWORKS_API_KEY=fw_\.\.\." .env; then
-        print_warning "API key appears to be placeholder value"
-        print_warning "Please set a real API key in .env file"
+    # Source .env to check values
+    source .env
+
+    # Check for required LLM API key (at least one provider must be configured)
+    local has_api_key=false
+    if [ -n "$OPENAI_API_KEY" ]; then has_api_key=true; fi
+    if [ -n "$ANTHROPIC_API_KEY" ]; then has_api_key=true; fi
+    if [ -n "$GROQ_API_KEY" ]; then has_api_key=true; fi
+    if [ -n "$GEMINI_API_KEY" ]; then has_api_key=true; fi
+    if [ -n "$FIREWORKS_API_KEY" ]; then has_api_key=true; fi
+    if [ -n "$OPENROUTER_API_KEY" ]; then has_api_key=true; fi
+    if [ -n "$LOCAL_LLM_API_KEY" ]; then has_api_key=true; fi
+
+    if [ "$has_api_key" = false ]; then
+        print_error "No LLM API key configured"
         echo ""
-        read -p "Continue anyway? (y/N) " -n 1 -r
+        echo "Edit .env and set at least ONE of:"
+        echo "  OPENAI_API_KEY=sk-..."
+        echo "  ANTHROPIC_API_KEY=sk-ant-..."
+        echo "  GROQ_API_KEY=gsk-... (FREE tier available)"
+        echo "  LOCAL_LLM_API_KEY=not-needed (for Ollama/LocalAI)"
         echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 1
-        fi
-    else
-        print_success ".env file configured"
+        exit 1
     fi
+
+    # Check for required SERVER_HOST
+    if [ -z "$SERVER_HOST" ]; then
+        print_error "SERVER_HOST not configured"
+        echo ""
+        echo "Edit .env and set:"
+        echo "  SERVER_HOST=192.168.x.x (your server's IP address)"
+        echo ""
+        echo "Examples:"
+        echo "  SERVER_HOST=192.168.0.200    # Local network"
+        echo "  SERVER_HOST=faultmaven.local # Hostname"
+        echo ""
+        exit 1
+    fi
+
+    print_success ".env file configured"
+    print_info "LLM Provider: Configured"
+    print_info "Server Host: $SERVER_HOST"
 }
 
 check_and_create_override() {
