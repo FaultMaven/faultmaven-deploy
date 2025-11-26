@@ -91,9 +91,12 @@ Next steps:
 **What happens during deployment:**
 
 - Docker pulls pre-built container images from [Docker Hub](https://hub.docker.com/u/faultmaven)
-- No compilation or building required - images are ready to run
+- 8 of 10 services use pre-built images (no building required)
+- 2 services build locally: fm-agent-service and fm-dashboard
 - First deployment downloads ~2-3GB of images (one-time)
 - Future updates only download changed layers (faster)
+
+> **📝 Note:** fm-agent-service and fm-dashboard currently build from local source. You'll need the `../fm-agent-service` and `../faultmaven-dashboard` directories available. See [Development Setup](#development-setup) for multi-repo cloning instructions.
 
 ### Prerequisites
 
