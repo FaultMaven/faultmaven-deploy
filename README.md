@@ -268,7 +268,62 @@ Expected health response:
 }
 ```
 
-**✅ FaultMaven is ready!** See [QUICKSTART.md](QUICKSTART.md) for detailed usage guide.
+**✅ FaultMaven is ready!**
+
+---
+
+## Using FaultMaven
+
+### Browser Extension - REQUIRED for AI Chat
+
+**⚠️ IMPORTANT:** The browser extension is **REQUIRED** to interact with the FaultMaven AI agent. The backend server alone does not provide a chat interface.
+
+#### Installation Options
+
+**Option 1: Chrome Web Store** (Recommended)
+```bash
+# Coming soon - FaultMaven Copilot will be published to the Chrome Web Store
+# Search for "FaultMaven Copilot" in Chrome Web Store
+```
+
+**Option 2: Install from GitHub** (Available Now)
+```bash
+# 1. Download the latest release
+git clone https://github.com/FaultMaven/faultmaven-copilot.git
+cd faultmaven-copilot
+
+# 2. Build the extension
+pnpm install
+pnpm build
+
+# 3. Load in Chrome
+# - Open chrome://extensions/
+# - Enable "Developer mode"
+# - Click "Load unpacked"
+# - Select the faultmaven-copilot/dist directory
+```
+
+#### Configure Extension
+
+After installation, configure the extension to connect to your FaultMaven server:
+
+```bash
+# 1. Click the FaultMaven extension icon in Chrome
+# 2. Go to Settings
+# 3. Set API URL to: http://<SERVER_HOST>:8090
+#    Example: http://192.168.0.200:8090
+# 4. Login with your dashboard credentials (default: admin/changeme123)
+```
+
+#### What Each Component Does
+
+| Component | Purpose | Required For |
+|-----------|---------|--------------|
+| **Browser Extension** | AI chat interface, real-time troubleshooting, evidence upload | ✅ **AI chat** (REQUIRED) |
+| **Dashboard** (Port 3000) | Knowledge base management, document upload, user settings | Knowledge base only (optional) |
+| **Backend Server** | API services, AI agent, data processing | Everything (REQUIRED) |
+
+**Note:** Without the browser extension, you can only interact with FaultMaven via direct API calls (developer option). The dashboard at port 3000 is for knowledge base management only, NOT for chatting with the AI agent.
 
 ---
 
