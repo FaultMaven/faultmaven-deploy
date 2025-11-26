@@ -1,0 +1,82 @@
+# Docker Compose override for local development
+# This file builds services from local repositories instead of pulling from Docker Hub
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Prerequisites:
+#   All service repositories must be cloned as sibling directories:
+#   faultmaven-workspace/
+#   ├── faultmaven-deploy/
+#   ├── fm-auth-service/
+#   ├── fm-session-service/
+#   ├── fm-case-service/
+#   ├── fm-knowledge-service/
+#   ├── fm-evidence-service/
+#   ├── fm-agent-service/
+#   ├── fm-api-gateway/
+#   ├── fm-job-worker/
+#   └── faultmaven-dashboard/
+
+services:
+  fm-auth-service:
+    build:
+      context: ../fm-auth-service
+      dockerfile: Dockerfile
+    image: null  # Don't use Docker Hub image
+
+  fm-session-service:
+    build:
+      context: ../fm-session-service
+      dockerfile: Dockerfile
+    image: null
+
+  fm-case-service:
+    build:
+      context: ../fm-case-service
+      dockerfile: Dockerfile
+    image: null
+
+  fm-knowledge-service:
+    build:
+      context: ../fm-knowledge-service
+      dockerfile: Dockerfile
+    image: null
+
+  fm-evidence-service:
+    build:
+      context: ../fm-evidence-service
+      dockerfile: Dockerfile
+    image: null
+
+  fm-agent-service:
+    build:
+      context: ../fm-agent-service
+      dockerfile: Dockerfile
+    image: null
+
+  fm-job-worker:
+    build:
+      context: ../fm-job-worker
+      dockerfile: Dockerfile
+    image: null
+
+  fm-job-worker-beat:
+    build:
+      context: ../fm-job-worker
+      dockerfile: Dockerfile.beat
+    image: null
+
+  fm-dashboard:
+    build:
+      context: ../faultmaven-dashboard
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://${SERVER_HOST}:8090
+    image: null
+
+  fm-api-gateway:
+    build:
+      context: ../fm-api-gateway
+      dockerfile: Dockerfile
+    image: null

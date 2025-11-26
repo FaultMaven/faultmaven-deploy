@@ -95,8 +95,6 @@ Next steps:
 - First deployment downloads ~2-3GB of images (one-time)
 - Future updates only download changed layers (faster)
 
-> **📝 Note for Early Adopters:** If you encounter "build path does not exist" errors, it means Docker Hub images haven't been published yet. In this case, you'll need to clone all service repositories. See [Development Setup](#development-setup) below for multi-repo cloning instructions.
-
 ### Prerequisites
 
 **Required:**
@@ -583,9 +581,9 @@ rm -rf ./data/
 
 ## Development Setup
 
-### ⚠️ For Contributors & Early Adopters Only
+### ⚠️ For Contributors Only
 
-If Docker Hub images aren't available yet, you'll need to clone all service repositories and build locally:
+If you want to build services from source instead of using pre-built Docker Hub images:
 
 ```bash
 # Create a workspace directory
@@ -617,7 +615,9 @@ done
 cd faultmaven-deploy
 cp .env.example .env
 # Edit .env with your settings
-./faultmaven start
+
+# Use docker-compose.dev.yml to build from local repositories
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
 **Directory structure after cloning:**
