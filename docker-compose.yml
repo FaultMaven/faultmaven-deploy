@@ -31,7 +31,7 @@ services:
     image: faultmaven/fm-auth-service:latest
     container_name: fm-auth-service
     ports:
-      - "8001:8000"
+      - "8001:8001"
     environment:
       - PROFILE=public
       - DB_TYPE=sqlite
@@ -48,7 +48,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=2)"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -238,7 +238,7 @@ services:
       - "8090:8090"
     environment:
       - PROFILE=public
-      - FM_AUTH_SERVICE_URL=http://fm-auth-service:8000
+      - FM_AUTH_SERVICE_URL=http://fm-auth-service:8001
       - FM_SESSION_SERVICE_URL=http://fm-session-service:8000
       - FM_CASE_SERVICE_URL=http://fm-case-service:8000
       - FM_KNOWLEDGE_SERVICE_URL=http://fm-knowledge-service:8000
