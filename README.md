@@ -95,32 +95,27 @@ cp .env.example .env
 
 ### 🎯 **LLM Provider Options**
 
-FaultMaven self-hosted uses **one LLM for all tasks** (simplified configuration). Choose from:
+Self-hosted FaultMaven uses **one LLM for all operations** - chat, analysis, and knowledge base queries. You configure a single provider in `.env` and it handles everything.
 
-- **Cloud providers**: OpenAI, Anthropic, Groq, Gemini, Fireworks, OpenRouter
-- **Local option**: Ollama, LM Studio, LocalAI, vLLM
+**Available providers:**
 
-Configure one provider and it handles chat, knowledge base queries, and all AI operations.
+- **Cloud LLMs**: OpenAI, Anthropic, Groq, Gemini, Fireworks, OpenRouter
+- **Local LLMs**: Ollama, LM Studio, LocalAI, vLLM
 
-**Choose your deployment model:**
+#### Cloud LLM (Recommended)
 
-#### Option 1: Cloud LLM (Recommended for best performance)
+- ✅ Fastest response (1-2 seconds)
+- ✅ Best reasoning quality
+- ✅ No local hardware needed
+- 💰 ~$0.10-$0.50 per session
 
-- ✅ Fastest response times (1-2 seconds)
-- ✅ Best quality for complex reasoning
-- ✅ No local hardware requirements
-- 💰 Cost: $0.10-$0.50 per troubleshooting session
+#### Local LLM (Full data sovereignty)
 
-#### Option 2: Local LLM (FREE, privacy-first)
-
-- ✅ Zero API costs (runs on your hardware)
-- ✅ 100% private (no data leaves your machine)
-- ✅ Works offline
-- ⚙️ Hardware: 8GB+ RAM for small models, 16GB+ recommended
-- ⚙️ GPU acceleration recommended for best performance
-- ⏱️ Slower inference (5-15 seconds vs 1-2 seconds)
-
-> **Need task-specific LLM routing?** The [FaultMaven Managed SaaS](https://github.com/FaultMaven/FaultMaven#2-managed-saas) supports hybrid deployment with automatic routing: cloud LLMs for complex diagnostics, local LLMs for knowledge base queries (10x+ cost savings).
+- ✅ Zero API costs
+- ✅ Air-gapped capable (offline)
+- ✅ Complete data control
+- ⚙️ Requires 8GB+ RAM (16GB+ recommended)
+- ⏱️ Slower (5-15 seconds vs 1-2 seconds)
 
 **What runs locally:**
 
