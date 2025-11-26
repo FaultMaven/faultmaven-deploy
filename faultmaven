@@ -557,6 +557,13 @@ cmd_verify() {
     fi
     source .env
 
+    # Give ChromaDB extra time to stabilize
+    # ChromaDB has no health check, so Knowledge Service may report healthy
+    # before ChromaDB is fully ready to accept connections
+    print_info "Waiting for services to stabilize (15 seconds)..."
+    sleep 15
+    echo ""
+
     # Use localhost for local testing (we're on the server)
     local API_BASE="http://localhost:8090/api/v1"
     local test_failed=false

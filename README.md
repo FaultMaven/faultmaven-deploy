@@ -62,15 +62,19 @@ cp .env.example .env
 # 4. Run: Start everything with one command
 ./faultmaven start
 # Docker automatically pulls pre-built images from Docker Hub
+# Waits up to 120 seconds for all services to pass health checks
 
 # 5. Verify: Test the installation
 ./faultmaven verify
+# Waits 15 seconds for ChromaDB to stabilize, then runs end-to-end tests
 ```
 
 **Expected output:**
 
 ```text
 🔍 Running FaultMaven verification tests...
+⏳ Waiting for services to stabilize (15 seconds)...
+
 ✅ All services healthy
 ✅ Case created successfully
 ✅ Evidence uploaded successfully
