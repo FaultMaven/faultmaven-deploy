@@ -127,10 +127,6 @@ Self-hosted FaultMaven uses **one LLM for all operations** - chat, analysis, and
 - ✅ Redis session store
 - ✅ SQLite data storage
 
-**Privacy & Data Control:**
-
-Self-hosted FaultMaven uses **one LLM provider for all tasks** (chat, analysis, knowledge base). Your case data, evidence files, and knowledge base **never leave your machine**. Only AI prompts and responses are sent to your chosen LLM provider (if using cloud LLM).
-
 ---
 
 ## Using the CLI Wrapper
