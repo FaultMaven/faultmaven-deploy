@@ -369,6 +369,7 @@ cmd_status() {
         "8004:Knowledge Service"
         "8005:Evidence Service"
         "8006:Agent Service"
+        "8090:API Gateway"
     )
 
     for service in "${services[@]}"; do
@@ -577,6 +578,7 @@ cmd_verify() {
         "8004:Knowledge Service"
         "8005:Evidence Service"
         "8006:Agent Service"
+        "8090:API Gateway"
     )
 
     local all_healthy=true
@@ -656,9 +658,9 @@ EOF
         echo ""
     fi
 
-    # Test 4: Query AI agent (optional - requires LLM configuration)
+    # Test 4: Query AI agent
     if [ -n "$case_id" ]; then
-        print_info "Testing AI agent endpoint (optional)..."
+        print_info "Testing AI agent endpoint..."
 
         # Use correct endpoint: /api/v1/agent/chat/{case_id}
         local agent_response=$(curl -s -X POST "$API_BASE/agent/chat/$case_id" \
@@ -668,20 +670,22 @@ EOF
             }" 2>/dev/null)
 
         if [ -n "$agent_response" ]; then
-            # Check if response is valid (not 404 or error)
-            if echo "$agent_response" | grep -qv "Not Found\|detail"; then
-                print_success "AI agent endpoint accessible"
+            # Check if response contains an error
+            if echo "$agent_response" | grep -q '"error"\|"detail"'; then
+                print_error "AI agent endpoint returned error: $(echo "$agent_response" | head -c 100)"
+                test_failed=true
             else
-                print_warning "AI agent requires configuration (LLM API key, routing)"
+                print_success "AI agent endpoint operational"
             fi
         else
-            print_warning "AI agent endpoint not configured (optional feature)"
+            print_error "AI agent endpoint not responding"
+            test_failed=true
         fi
         echo ""
     fi
 
-    # Test 5: Knowledge base search (optional - requires embeddings setup)
-    print_info "Testing knowledge base endpoint (optional)..."
+    # Test 5: Knowledge base search
+    print_info "Testing knowledge base endpoint..."
     local kb_response=$(curl -s -X POST "$API_BASE/knowledge/search" \
         -H "Content-Type: application/json" \
         -d '{
@@ -691,14 +695,19 @@ EOF
         }' 2>/dev/null)
 
     if [ -n "$kb_response" ]; then
-        # Check for successful response (empty results are OK for basic test)
-        if echo "$kb_response" | grep -q '"results"'; then
+        # Check if response contains an error
+        if echo "$kb_response" | grep -q '"error"\|"detail"'; then
+            print_error "Knowledge base endpoint returned error: $(echo "$kb_response" | head -c 100)"
+            test_failed=true
+        elif echo "$kb_response" | grep -q '"results"'; then
             print_success "Knowledge base endpoint operational"
         else
-            print_warning "Knowledge base requires configuration (embeddings, documents)"
+            print_error "Knowledge base response invalid"
+            test_failed=true
         fi
     else
-        print_warning "Knowledge base endpoint not configured (optional feature)"
+        print_error "Knowledge base endpoint not responding"
+        test_failed=true
     fi
 
     echo ""
