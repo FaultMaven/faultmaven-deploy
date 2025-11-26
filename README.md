@@ -1,6 +1,6 @@
 # FaultMaven - Self-Hosted Deployment
 
-**The most powerful AI troubleshooter you can run on your laptop for free.**
+**An AI-powered troubleshooting copilot you can run anywhere for free.**
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://hub.docker.com/u/faultmaven)
@@ -9,20 +9,20 @@
 
 ## Overview
 
-This repository provides a complete Docker Compose deployment for self-hosting **FaultMaven**, an AI-powered troubleshooting platform.
+This repository provides a complete Docker Compose deployment for self-hosting **FaultMaven**, an AI-powered troubleshooting copilot that helps you diagnose and resolve technical issues faster.
 
 **📖 For architectural details and contributing:** See the main [FaultMaven](https://github.com/FaultMaven/FaultMaven) repository.
 
 **What you get with self-hosted deployment:**
 
-- 🤖 **Complete AI Agent** - Full LangGraph agent with milestone-based investigation
-- 📚 **3-Tier RAG System** - Personal KB + Global KB + Case Working Memory
-- 📊 **8 Data Types** - Logs, traces, profiles, metrics, config, code, text, visual
-- 🗄️ **SQLite Database** - Zero configuration, single file, portable
-- 🔍 **ChromaDB Vector Search** - Semantic knowledge base retrieval
-- ⚙️ **Background Jobs** - Celery + Redis for async processing
+- 🤖 **AI Troubleshooting Agent** - LangGraph-powered assistant with milestone-based investigation
+- 📚 **3-Tier Knowledge Base** - Personal KB + Global KB + Case Working Memory
+- 📊 **8 Data Type Support** - Logs, traces, profiles, metrics, config, code, text, visual
+- 🗄️ **Portable SQLite Database** - Zero configuration, single file, easy backups
+- 🔍 **Vector Search** - ChromaDB for semantic knowledge retrieval
+- ⚙️ **Background Processing** - Celery + Redis for async operations
 
-**Deploy the entire platform in 2 minutes with a single command.**
+**Deploy everything in 2 minutes with a single command.**
 
 ---
 
@@ -50,25 +50,64 @@ This repository provides a complete Docker Compose deployment for self-hosting *
 git clone https://github.com/FaultMaven/faultmaven-deploy.git
 cd faultmaven-deploy
 
-# 2. Secure: Add your API key
+# 2. Configure: Add your settings
 cp .env.example .env
-# Edit .env and add: OPENAI_API_KEY=sk-...
+# Edit .env and add:
+#   - LLM API key (any provider: OPENAI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, etc.)
+#   - SERVER_HOST (your server IP, e.g., 192.168.0.200)
 
 # 3. Protect: Resource limits (auto-created by wrapper)
 # The ./faultmaven script handles this automatically
 
 # 4. Run: Start everything with one command
 ./faultmaven start
+# Docker automatically pulls pre-built images from Docker Hub
+# Waits up to 120 seconds for all services to pass health checks
 ```
 
-**That's it!** FaultMaven is now running on your laptop.
+**Expected output:**
+
+```text
+✅ Docker is running
+✅ System has 15.5 GB RAM (8 GB required)
+✅ Environment file configured (.env)
+✅ Resource limits configured
+
+Starting Docker containers...
+⏳ Waiting for services to become healthy (up to 120 seconds)...
+
+✅ FaultMaven services started successfully!
+
+Next steps:
+  1. Check status:  ./faultmaven status
+  2. View logs:     ./faultmaven logs
+  3. Access services:
+     - API Gateway: http://192.168.0.200:8090/docs
+     - Dashboard:   http://192.168.0.200:3000
+```
+
+**If services don't start:** Run `./faultmaven logs` to see error details, or see [Troubleshooting](#troubleshooting) below.
+
+**What happens during deployment:**
+
+- Docker pulls pre-built container images from [Docker Hub](https://hub.docker.com/u/faultmaven)
+- No compilation or building required - images are ready to run
+- First deployment downloads ~2-3GB of images (one-time)
+- Future updates only download changed layers (faster)
+
+> **📝 Note for Early Adopters:** If you encounter "build path does not exist" errors, it means Docker Hub images haven't been published yet. In this case, you'll need to clone all service repositories. See [Development Setup](#development-setup) below for multi-repo cloning instructions.
 
 ### Prerequisites
 
 **Required:**
+
 - **Docker** & **Docker Compose** ([Get Docker](https://docs.docker.com/get-docker/))
 - **8GB RAM** minimum (16GB recommended)
-- **Cloud LLM API Key** - Choose one or more:
+  - Default resource limits assume 8GB system RAM
+  - Allocates ~5GB total: Agent (1.5GB), Knowledge (2GB), ChromaDB (1GB), Redis (512MB)
+  - Remaining ~3GB for OS and other applications
+  - **16GB+ systems:** Edit `docker-compose.override.yml` to increase limits for better performance
+- **LLM API Key** - Choose one or more:
   - [OpenAI](https://platform.openai.com/api-keys) (GPT-4, GPT-3.5)
   - [Anthropic](https://console.anthropic.com/) (Claude)
   - [Groq](https://console.groq.com/) (FREE tier - ultra-fast!)
@@ -78,52 +117,37 @@ cp .env.example .env
 
 ### 🎯 **LLM Provider Options**
 
-FaultMaven self-hosted supports **7 LLM providers** with automatic fallback:
+Self-hosted FaultMaven uses **one LLM for all operations** - chat, analysis, and knowledge base queries. You configure a single provider in `.env` and it handles everything.
 
-- **6 Cloud providers**: OpenAI, Anthropic, Groq, Gemini, Fireworks, OpenRouter
-- **1 Local option**: Ollama, LM Studio, LocalAI, vLLM
+**Available providers:**
 
-**Choose your deployment model:**
+- **Cloud LLMs**: OpenAI, Anthropic, Groq, Gemini, Fireworks, OpenRouter
+- **Local LLMs**: Ollama, LM Studio, LocalAI, vLLM
 
-#### Option 1: Cloud LLM (Recommended for best performance)
+#### Cloud LLM (Recommended)
 
-- ✅ Fastest response times (1-2 seconds)
-- ✅ Best quality for complex reasoning
-- ✅ No local hardware requirements
-- 💰 Cost: $0.10-$0.50 per troubleshooting session
+- ✅ Fastest response (1-2 seconds)
+- ✅ Best reasoning quality
+- ✅ No local hardware needed
+- 💰 ~$0.10-$0.50 per session
 
-#### Option 2: Local LLM (FREE, privacy-first)
+#### Local LLM (Full data sovereignty)
 
-- ✅ Zero API costs (runs on your hardware)
-- ✅ 100% private (no data leaves your machine)
-- ✅ Works offline
-- ⚙️ Hardware: 8GB+ RAM for small models, 16GB+ recommended
-- ⚙️ GPU acceleration recommended for best performance
-- ⏱️ Slower inference (5-15 seconds vs 1-2 seconds)
+- ✅ Zero API costs
+- ✅ Air-gapped capable (offline)
+- ✅ Complete data control
+- ⚙️ Requires 8GB+ RAM (16GB+ recommended)
+- ⏱️ Slower (5-15 seconds vs 1-2 seconds)
 
-#### Option 3: Hybrid (Best of both worlds)
+**What runs locally:**
 
-- ✅ Cloud LLM for complex diagnostics (quality + speed)
-- ✅ Local LLM for knowledge base queries (free + private)
-- ✅ Cost optimization: 10x+ savings on high-volume RAG queries
-
-**What runs locally (always):**
-
-- ✅ 7 microservices: auth, session, case, knowledge, evidence, agent, API gateway
+- ✅ 6 microservices: auth, session, case, knowledge, evidence, agent
+- ✅ API Gateway (single entry point)
 - ✅ Dashboard web UI for Global KB management
 - ✅ 2 background workers: Celery worker + Celery Beat scheduler
 - ✅ ChromaDB vector database
 - ✅ Redis session store
 - ✅ SQLite data storage
-- ✅ All your sensitive data stays on your machine
-
-**What varies by LLM choice:**
-
-- ☁️ **Cloud LLM**: Inference via API (only prompts/responses sent, no tracking)
-- 🖥️ **Local LLM**: Everything runs locally (zero external calls)
-- 🔀 **Hybrid**: Smart routing based on task type
-
-**Your data never leaves your laptop** - only anonymous prompts/responses go to the LLM provider you choose.
 
 ---
 
@@ -150,9 +174,14 @@ The `./faultmaven` script simplifies deployment with pre-flight checks and resou
 # Reset to factory defaults (DANGER: deletes all data)
 ./faultmaven clean
 
+# Optional: Run end-to-end verification tests (troubleshooting only)
+./faultmaven verify
+
 # Show help
 ./faultmaven help
 ```
+
+---
 
 **The wrapper automatically:**
 - ✅ Checks Docker is running
@@ -170,31 +199,34 @@ If you prefer direct Docker Compose commands:
 ```bash
 # Configure environment
 cp .env.example .env
-# Edit .env and add: OPENAI_API_KEY=sk-...
+# Edit .env and add your LLM API key (see .env.example for all provider options)
 
 # Create resource limits (recommended)
 cp docker-compose.override.yml.example docker-compose.override.yml
 
-# Start all services
+# Start all services (pulls pre-built images from Docker Hub)
 docker-compose up -d
 
 # Check status
 docker-compose ps
 
 # Test health endpoints
-curl http://localhost:8001/health  # Auth Service
-curl http://localhost:8002/health  # Session Service
-curl http://localhost:8003/health  # Case Service
-curl http://localhost:8004/health  # Knowledge Service
-curl http://localhost:8005/health  # Evidence Service
-curl http://localhost:8006/health  # Agent Service
+# Note: Replace <SERVER_HOST> with 'localhost' (if on server) or server IP (if remote)
+curl http://<SERVER_HOST>:8001/health  # Auth Service
+curl http://<SERVER_HOST>:8002/health  # Session Service
+curl http://<SERVER_HOST>:8003/health  # Case Service
+curl http://<SERVER_HOST>:8004/health  # Knowledge Service
+curl http://<SERVER_HOST>:8005/health  # Evidence Service
+curl http://<SERVER_HOST>:8006/health  # Agent Service
 
 # Access web dashboard
-# Replace SERVER_IP with your server's IP address (set in .env as SERVER_HOST)
-open http://SERVER_IP:3000  # Knowledge Base Management Dashboard
+# Replace <SERVER_HOST> with your server's IP address (from .env SERVER_HOST)
+# Use 'localhost' only if accessing from the server itself
+open http://<SERVER_HOST>:3000
 # Example: http://192.168.0.200:3000
-# Login: admin / changeme123 (change password after first login!)
-# Note: Works from any device on your network - most servers are headless!
+
+# ⚠️ SECURITY WARNING: Change default credentials immediately!
+# Login: admin / changeme123
 ```
 
 Expected health response:
@@ -207,52 +239,129 @@ Expected health response:
 }
 ```
 
-**✅ FaultMaven is ready!** See [QUICKSTART.md](QUICKSTART.md) for detailed usage guide.
+**✅ FaultMaven is ready!**
+
+---
+
+## Using FaultMaven
+
+### Browser Extension - REQUIRED for AI Chat
+
+**⚠️ IMPORTANT:** The browser extension is **REQUIRED** to interact with the FaultMaven AI agent. The backend server alone does not provide a chat interface.
+
+#### Installation Options
+
+**Option 1: Chrome Web Store** (Recommended)
+```bash
+# Coming soon - FaultMaven Copilot will be published to the Chrome Web Store
+# Search for "FaultMaven Copilot" in Chrome Web Store
+```
+
+**Option 2: Install from GitHub** (Available Now)
+```bash
+# 1. Download the latest release
+git clone https://github.com/FaultMaven/faultmaven-copilot.git
+cd faultmaven-copilot
+
+# 2. Build the extension
+pnpm install
+pnpm build
+
+# 3. Load in Chrome
+# - Open chrome://extensions/
+# - Enable "Developer mode"
+# - Click "Load unpacked"
+# - Select the faultmaven-copilot/dist directory
+```
+
+#### Configure Extension
+
+After installation, configure the extension to connect to your FaultMaven server:
+
+```bash
+# 1. Click the FaultMaven extension icon in Chrome
+# 2. Go to Settings
+# 3. Set API URL to: http://<SERVER_HOST>:8090
+#    Example: http://192.168.0.200:8090
+# 4. Login with your dashboard credentials (default: admin/changeme123)
+```
+
+#### What Each Component Does
+
+| Component | Purpose | Required For |
+|-----------|---------|--------------|
+| **Browser Extension** | AI chat interface, real-time troubleshooting, evidence upload | ✅ **AI chat** (REQUIRED) |
+| **Dashboard** (Port 3000) | Knowledge base management, document upload, user settings | Knowledge base only (optional) |
+| **Backend Server** | API services, AI agent, data processing | Everything (REQUIRED) |
+
+**Note:** Without the browser extension, you can only interact with FaultMaven via direct API calls (developer option). The dashboard at port 3000 is for knowledge base management only, NOT for chatting with the AI agent.
 
 ---
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                        USER INTERFACES                        │
-├──────────────────────────┬───────────────────────────────────┤
-│  Browser Extension (UI)  │    Dashboard Web UI (Port 3000)   │
-│  faultmaven-copilot      │    faultmaven-dashboard           │
-│  • Real-time chat        │    • Login/Authentication         │
-│  • Interactive Q&A       │    • Global KB management         │
-│  • Evidence upload       │    • Document upload              │
-└────────────┬─────────────┴──────────────┬────────────────────┘
-             │                            │
-             │           HTTP API         │
-             ▼                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    API Gateway (Port 8090)                   │
-│              Main entry point for all requests               │
-└─────────┬───────────┬───────────┬──────────┬───────┬────────┘
-          │           │           │          │       │
-          ▼           ▼           ▼          ▼       ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Backend Microservices (Ports 8001-8006)         │
-├─────────┬───────────┬───────────┬──────────┬───────┬────────┤
-│  Auth   │  Session  │   Case    │Knowledge │Evidence│ Agent  │
-│  :8001  │   :8002   │   :8003   │  :8004   │ :8005  │ :8006  │
-│         │           │           │          │        │        │
-│ Simple  │ Redis     │ Milestone │ 3-Tier   │ File   │LangGraph│
-│ Auth    │ Sessions  │ Tracking  │   RAG    │ Upload │  AI    │
-└────┬────┴─────┬─────┴─────┬─────┴────┬─────┴───┬────┴────┬───┘
-     │          │           │          │         │         │
-     ▼          ▼           ▼          ▼         ▼         ▼
-┌────────┐ ┌────────┐ ┌────────┐ ┌──────────┐ ┌─────┐ ┌──────┐
-│ SQLite │ │ Redis  │ │ SQLite │ │ ChromaDB │ │./data││Cloud │
-│/data/  │ │:6379   │ │/data/  │ │  :8007   │ │files││ LLM  │
-└────────┘ └────────┘ └────────┘ └──────────┘ └─────┘ └──────┘
-                                                         ▲
-                            Background Workers           │
-                            ┌──────────┬──────────┐      │
-                            │Job Worker│Worker Beat│     │
-                            │ (Celery) │(Scheduler)│─────┘
-                            └──────────┴──────────┘
+```mermaid
+graph TB
+    subgraph "User Interfaces"
+        UI1["Browser Extension<br/>faultmaven-copilot<br/>• Real-time chat<br/>• Interactive Q&A<br/>• Evidence upload"]
+        UI2["Dashboard Web UI<br/>Port 3000<br/>• Login/Authentication<br/>• Global KB management<br/>• Document upload"]
+    end
+
+    subgraph "API Layer"
+        GW["API Gateway<br/>Port 8090<br/>Main entry point"]
+    end
+
+    subgraph "Microservices (Ports 8001-8006)"
+        AUTH["Auth Service<br/>:8001<br/>Simple Auth"]
+        SESSION["Session Service<br/>:8002<br/>Redis Sessions"]
+        CASE["Case Service<br/>:8003<br/>Milestone Tracking"]
+        KNOWLEDGE["Knowledge Service<br/>:8004<br/>3-Tier RAG"]
+        EVIDENCE["Evidence Service<br/>:8005<br/>File Upload"]
+        AGENT["Agent Service<br/>:8006<br/>LangGraph AI"]
+    end
+
+    subgraph "Data Layer"
+        DB1[("SQLite<br/>/data/")]
+        REDIS[("Redis<br/>:6379")]
+        CHROMA[("ChromaDB<br/>:8007")]
+        FILES[("File Storage<br/>./data/files")]
+    end
+
+    subgraph "Background Processing"
+        WORKER["Celery Worker<br/>Job Processing"]
+        BEAT["Celery Beat<br/>Scheduler"]
+    end
+
+    subgraph "External Services"
+        LLM["Cloud LLM<br/>OpenAI/Anthropic/Groq"]
+    end
+
+    UI1 -->|HTTP API| GW
+    UI2 -->|HTTP API| GW
+
+    GW --> AUTH
+    GW --> SESSION
+    GW --> CASE
+    GW --> KNOWLEDGE
+    GW --> EVIDENCE
+    GW --> AGENT
+
+    AUTH --> DB1
+    SESSION --> REDIS
+    CASE --> DB1
+    KNOWLEDGE --> CHROMA
+    EVIDENCE --> FILES
+    AGENT --> LLM
+
+    WORKER --> REDIS
+    BEAT --> REDIS
+    WORKER --> LLM
+
+    style GW fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style AGENT fill:#E27D60,stroke:#C25A3C,stroke-width:2px,color:#fff
+    style LLM fill:#85C88A,stroke:#5A9F5E,stroke-width:2px,color:#fff
+    style UI1 fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
+    style UI2 fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
 ```
 
 ### Services
@@ -271,6 +380,8 @@ Expected health response:
 | **Job Worker Beat** | - | Celery task scheduler |
 | **Redis** | 6379 | Session storage & task queue |
 | **ChromaDB** | 8007 | Vector database for semantic search |
+
+**Note:** Individual service ports (8001-8007) are exposed for health checks and debugging. All API requests should go through the **API Gateway on port 8090**.
 
 ---
 
@@ -326,10 +437,17 @@ docker-compose up -d
 
 ## API Usage Examples
 
+All API requests should go through the **API Gateway (port 8090)** - the single entry point for all client requests.
+
+**Important:** Replace `<SERVER_HOST>` below with:
+
+- `localhost` if running commands ON the FaultMaven server itself
+- Your server IP (e.g., `192.168.0.200`) if running FROM a different machine
+
 ### Create a Case
 
 ```bash
-curl -X POST http://localhost:8003/api/v1/cases \
+curl -X POST http://<SERVER_HOST>:8090/api/v1/cases \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Production API latency spike",
@@ -341,7 +459,7 @@ curl -X POST http://localhost:8003/api/v1/cases \
 ### Upload Evidence
 
 ```bash
-curl -X POST http://localhost:8005/api/v1/evidence \
+curl -X POST http://<SERVER_HOST>:8090/api/v1/evidence \
   -F "file=@/path/to/error.log" \
   -F "case_id=case_abc123" \
   -F "evidence_type=log"
@@ -350,7 +468,7 @@ curl -X POST http://localhost:8005/api/v1/evidence \
 ### Query AI Agent
 
 ```bash
-curl -X POST http://localhost:8006/api/v1/agent/query \
+curl -X POST http://<SERVER_HOST>:8090/api/v1/agent/query \
   -H "Content-Type: application/json" \
   -d '{
     "case_id": "case_abc123",
@@ -404,13 +522,31 @@ ports:
 
 ### ChromaDB connection issues
 
-```bash
-# Check ChromaDB health
-curl http://localhost:8007/api/v1/heartbeat
+**⚠️ Note:** ChromaDB doesn't have a built-in health check endpoint. Services that depend on it use retry logic to handle startup timing.
 
-# Restart ChromaDB
+```bash
+# Check if ChromaDB container is running
+docker-compose ps chromadb
+
+# View ChromaDB logs for errors
+docker-compose logs chromadb
+
+# Test ChromaDB manually
+curl http://<SERVER_HOST>:8007/api/v1/heartbeat
+
+# If ChromaDB is slow to start, wait 10-15 seconds then restart dependent services
+docker-compose restart fm-knowledge-service
+docker-compose restart fm-agent-service
+
+# Full ChromaDB restart
 docker-compose restart chromadb
 ```
+
+**Common ChromaDB issues:**
+
+- **Slow startup:** ChromaDB can take 10-15 seconds to fully initialize. Wait before accessing it.
+- **Race conditions:** If knowledge service starts before ChromaDB is ready, it will retry automatically (up to 5 times with exponential backoff).
+- **Connection refused:** Check that port 8007 isn't in use by another application.
 
 ---
 
@@ -427,7 +563,7 @@ docker-compose up -d --build
 
 # Verify services are healthy
 docker-compose ps
-curl http://localhost:8003/health
+curl http://<SERVER_HOST>:8003/health  # Replace <SERVER_HOST> with 'localhost' or server IP
 ```
 
 ---
@@ -441,6 +577,64 @@ docker-compose down
 # Stop and remove data (WARNING: deletes everything)
 docker-compose down -v
 rm -rf ./data/
+```
+
+---
+
+## Development Setup
+
+### ⚠️ For Contributors & Early Adopters Only
+
+If Docker Hub images aren't available yet, you'll need to clone all service repositories and build locally:
+
+```bash
+# Create a workspace directory
+mkdir faultmaven-workspace
+cd faultmaven-workspace
+
+# Clone deployment repository
+git clone https://github.com/FaultMaven/faultmaven-deploy.git
+
+# Clone all service repositories (required for local builds)
+repos=(
+  "fm-core-lib"
+  "fm-auth-service"
+  "fm-session-service"
+  "fm-case-service"
+  "fm-knowledge-service"
+  "fm-evidence-service"
+  "fm-agent-service"
+  "fm-api-gateway"
+  "fm-job-worker"
+  "faultmaven-dashboard"
+)
+
+for repo in "${repos[@]}"; do
+  git clone https://github.com/FaultMaven/$repo.git
+done
+
+# Now deploy from the deploy repository
+cd faultmaven-deploy
+cp .env.example .env
+# Edit .env with your settings
+./faultmaven start
+```
+
+**Directory structure after cloning:**
+
+```text
+faultmaven-workspace/
+├── faultmaven-deploy/          # This repo
+├── fm-auth-service/             # Auth microservice
+├── fm-session-service/          # Session microservice
+├── fm-case-service/             # Case microservice
+├── fm-knowledge-service/        # Knowledge microservice
+├── fm-evidence-service/         # Evidence microservice
+├── fm-agent-service/            # Agent microservice
+├── fm-api-gateway/              # API Gateway
+├── fm-job-worker/               # Background jobs
+├── faultmaven-dashboard/        # Web UI
+└── fm-core-lib/                 # Shared library
 ```
 
 ---
