@@ -73,6 +73,8 @@ cp .env.example .env
 - First deployment downloads ~2-3GB of images (one-time)
 - Future updates only download changed layers (faster)
 
+> **📝 Note for Early Adopters:** If you encounter "build path does not exist" errors, it means Docker Hub images haven't been published yet. In this case, you'll need to clone all service repositories. See [Development Setup](#development-setup) below for multi-repo cloning instructions.
+
 ### Prerequisites
 
 **Required:**
@@ -161,12 +163,54 @@ The `./faultmaven` script simplifies deployment with pre-flight checks and resou
 # Stop services (preserves data)
 ./faultmaven stop
 
+# Verify installation (test end-to-end functionality)
+./faultmaven verify
+
 # Reset to factory defaults (DANGER: deletes all data)
 ./faultmaven clean
 
 # Show help
 ./faultmaven help
 ```
+
+### Verifying Your Installation
+
+After deployment, verify everything works with the automated test suite:
+
+```bash
+./faultmaven verify
+```
+
+**What the verification test does:**
+
+1. ✅ Checks all service health endpoints
+2. ✅ Creates a test case via API
+3. ✅ Uploads test evidence (log file)
+4. ✅ Queries the AI agent
+5. ✅ Verifies database persistence
+6. ✅ Tests knowledge base search
+7. ✅ Confirms end-to-end workflow
+
+**Expected output:**
+
+```text
+🔍 Running FaultMaven verification tests...
+✅ All services healthy
+✅ Case created successfully (ID: case_test_123)
+✅ Evidence uploaded successfully
+✅ AI agent responded (latency: 1.2s)
+✅ Database persistence confirmed
+✅ Knowledge base operational
+🎉 All tests passed! FaultMaven is ready to use.
+```
+
+**If verification fails:**
+
+- Run `./faultmaven status` to check service health
+- Run `./faultmaven logs <service-name>` to view error logs
+- See [Troubleshooting](#troubleshooting) section below
+
+---
 
 **The wrapper automatically:**
 - ✅ Checks Docker is running
@@ -452,16 +496,31 @@ ports:
 
 ### ChromaDB connection issues
 
+**⚠️ Note:** ChromaDB doesn't have a built-in health check endpoint. Services that depend on it use retry logic to handle startup timing.
+
 ```bash
-# Check ChromaDB is running
+# Check if ChromaDB container is running
 docker-compose ps chromadb
 
-# View ChromaDB logs
+# View ChromaDB logs for errors
 docker-compose logs chromadb
 
-# Restart ChromaDB
+# Test ChromaDB manually
+curl http://localhost:8007/api/v1/heartbeat
+
+# If ChromaDB is slow to start, wait 10-15 seconds then restart dependent services
+docker-compose restart fm-knowledge-service
+docker-compose restart fm-agent-service
+
+# Full ChromaDB restart
 docker-compose restart chromadb
 ```
+
+**Common ChromaDB issues:**
+
+- **Slow startup:** ChromaDB can take 10-15 seconds to fully initialize. Wait before accessing it.
+- **Race conditions:** If knowledge service starts before ChromaDB is ready, it will retry automatically (up to 5 times with exponential backoff).
+- **Connection refused:** Check that port 8007 isn't in use by another application.
 
 ---
 
@@ -492,6 +551,64 @@ docker-compose down
 # Stop and remove data (WARNING: deletes everything)
 docker-compose down -v
 rm -rf ./data/
+```
+
+---
+
+## Development Setup
+
+### ⚠️ For Contributors & Early Adopters Only
+
+If Docker Hub images aren't available yet, you'll need to clone all service repositories and build locally:
+
+```bash
+# Create a workspace directory
+mkdir faultmaven-workspace
+cd faultmaven-workspace
+
+# Clone deployment repository
+git clone https://github.com/FaultMaven/faultmaven-deploy.git
+
+# Clone all service repositories (required for local builds)
+repos=(
+  "fm-core-lib"
+  "fm-auth-service"
+  "fm-session-service"
+  "fm-case-service"
+  "fm-knowledge-service"
+  "fm-evidence-service"
+  "fm-agent-service"
+  "fm-api-gateway"
+  "fm-job-worker"
+  "faultmaven-dashboard"
+)
+
+for repo in "${repos[@]}"; do
+  git clone https://github.com/FaultMaven/$repo.git
+done
+
+# Now deploy from the deploy repository
+cd faultmaven-deploy
+cp .env.example .env
+# Edit .env with your settings
+./faultmaven start
+```
+
+**Directory structure after cloning:**
+
+```text
+faultmaven-workspace/
+├── faultmaven-deploy/          # This repo
+├── fm-auth-service/             # Auth microservice
+├── fm-session-service/          # Session microservice
+├── fm-case-service/             # Case microservice
+├── fm-knowledge-service/        # Knowledge microservice
+├── fm-evidence-service/         # Evidence microservice
+├── fm-agent-service/            # Agent microservice
+├── fm-api-gateway/              # API Gateway
+├── fm-job-worker/               # Background jobs
+├── faultmaven-dashboard/        # Web UI
+└── fm-core-lib/                 # Shared library
 ```
 
 ---
