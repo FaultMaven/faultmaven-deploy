@@ -43,7 +43,7 @@ This repository provides a complete Docker Compose deployment for self-hosting *
 
 ## Quick Start
 
-**⚡ Four Simple Steps:**
+**⚡ Five Simple Steps:**
 
 ```bash
 # 1. Install: Clone the repository
@@ -62,9 +62,24 @@ cp .env.example .env
 # 4. Run: Start everything with one command
 ./faultmaven start
 # Docker automatically pulls pre-built images from Docker Hub
+
+# 5. Verify: Test the installation
+./faultmaven verify
 ```
 
-**That's it!** FaultMaven is now running.
+**Expected output:**
+
+```text
+🔍 Running FaultMaven verification tests...
+✅ All services healthy
+✅ Case created successfully
+✅ Evidence uploaded successfully
+✅ AI agent responded
+✅ Knowledge base operational
+🎉 All tests passed! FaultMaven is ready to use.
+```
+
+**If verification fails:** Run `./faultmaven logs` to see error details, or see [Troubleshooting](#troubleshooting) below.
 
 **What happens during deployment:**
 
@@ -158,43 +173,6 @@ The `./faultmaven` script simplifies deployment with pre-flight checks and resou
 # Show help
 ./faultmaven help
 ```
-
-### Verifying Your Installation
-
-After deployment, verify everything works with the automated test suite:
-
-```bash
-./faultmaven verify
-```
-
-**What the verification test does:**
-
-1. ✅ Checks all service health endpoints
-2. ✅ Creates a test case via API
-3. ✅ Uploads test evidence (log file)
-4. ✅ Queries the AI agent
-5. ✅ Verifies database persistence
-6. ✅ Tests knowledge base search
-7. ✅ Confirms end-to-end workflow
-
-**Expected output:**
-
-```text
-🔍 Running FaultMaven verification tests...
-✅ All services healthy
-✅ Case created successfully (ID: case_test_123)
-✅ Evidence uploaded successfully
-✅ AI agent responded (latency: 1.2s)
-✅ Database persistence confirmed
-✅ Knowledge base operational
-🎉 All tests passed! FaultMaven is ready to use.
-```
-
-**If verification fails:**
-
-- Run `./faultmaven status` to check service health
-- Run `./faultmaven logs <service-name>` to view error logs
-- See [Troubleshooting](#troubleshooting) section below
 
 ---
 
