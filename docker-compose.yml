@@ -246,6 +246,8 @@ services:
       - FM_AGENT_SERVICE_URL=http://fm-agent-service:8000
       # Investigation service not yet deployed - aggregator will skip gracefully
       # - FM_INVESTIGATION_SERVICE_URL=http://fm-investigation-service:8000
+      # Auth configuration for self-hosted mode (optional auth)
+      - AUTH_REQUIRED=false
       # CORS origins - allows dashboard access from any deployment (localhost, LAN IP, domain)
       # Uses SERVER_HOST from .env to support network access (required for non-localhost deployments)
       - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://${SERVER_HOST}:3000
