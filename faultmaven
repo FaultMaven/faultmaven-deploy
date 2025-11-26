@@ -322,7 +322,7 @@ cmd_start() {
             echo ""
             print_warning "Services started but some are still initializing"
             echo ""
-            echo "This is normal - services need 60-90 seconds to become fully healthy."
+            echo "This might not be an issue, as it may sometimes take over 120 seconds for services to become fully healthy."
             echo "Run './faultmaven status' in 30 seconds to verify all services are up."
             echo ""
         fi
