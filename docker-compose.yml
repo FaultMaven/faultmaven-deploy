@@ -28,9 +28,7 @@ services:
 
   # Core microservices
   fm-auth-service:
-    build:
-      context: ../fm-auth-service
-      dockerfile: Dockerfile
+    image: faultmaven/fm-auth-service:latest
     container_name: fm-auth-service
     ports:
       - "8001:8000"
@@ -57,9 +55,7 @@ services:
       start_period: 40s
 
   fm-session-service:
-    build:
-      context: ../fm-session-service
-      dockerfile: Dockerfile
+    image: faultmaven/fm-session-service:latest
     container_name: fm-session-service
     ports:
       - "8002:8000"
@@ -79,9 +75,7 @@ services:
       start_period: 40s
 
   fm-case-service:
-    build:
-      context: ../fm-case-service
-      dockerfile: Dockerfile
+    image: faultmaven/fm-case-service:latest
     container_name: fm-case-service
     ports:
       - "8003:8000"
@@ -104,9 +98,7 @@ services:
       start_period: 40s
 
   fm-knowledge-service:
-    build:
-      context: ../fm-knowledge-service
-      dockerfile: Dockerfile
+    image: faultmaven/fm-knowledge-service:latest
     container_name: fm-knowledge-service
     ports:
       - "8004:8000"
@@ -128,9 +120,7 @@ services:
       start_period: 40s
 
   fm-evidence-service:
-    build:
-      context: ../fm-evidence-service
-      dockerfile: Dockerfile
+    image: faultmaven/fm-evidence-service:latest
     container_name: fm-evidence-service
     ports:
       - "8005:8000"
@@ -189,9 +179,7 @@ services:
 
   # Job processing
   fm-job-worker:
-    build:
-      context: ../fm-job-worker
-      dockerfile: Dockerfile
+    image: faultmaven/fm-job-worker:latest
     container_name: fm-job-worker
     environment:
       - REDIS_HOST=redis
@@ -209,9 +197,7 @@ services:
       start_period: 30s
 
   fm-job-worker-beat:
-    build:
-      context: ../fm-job-worker
-      dockerfile: Dockerfile.beat
+    image: faultmaven/fm-job-worker-beat:latest
     container_name: fm-job-worker-beat
     environment:
       - REDIS_HOST=redis
@@ -234,9 +220,6 @@ services:
       context: ../faultmaven-dashboard
       dockerfile: Dockerfile
       args:
-        # Dashboard connects to API Gateway (port 8090) for all requests
-        # Note: VITE_API_URL is baked into the build at compile time
-        # Use SERVER_HOST from .env for network access (required for non-localhost deployments)
         - VITE_API_URL=http://${SERVER_HOST}:8090
     container_name: fm-dashboard
     ports:
@@ -253,9 +236,7 @@ services:
 
   # API Gateway - Single entry point for all client requests
   fm-api-gateway:
-    build:
-      context: ../fm-api-gateway
-      dockerfile: Dockerfile
+    image: faultmaven/fm-api-gateway:latest
     container_name: fm-api-gateway
     ports:
       - "8090:8090"

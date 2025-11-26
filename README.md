@@ -91,11 +91,12 @@ Next steps:
 **What happens during deployment:**
 
 - Docker pulls pre-built container images from [Docker Hub](https://hub.docker.com/u/faultmaven)
-- No compilation or building required - images are ready to run
+- 8 of 10 services use pre-built images (no building required)
+- 2 services build locally: fm-agent-service and fm-dashboard
 - First deployment downloads ~2-3GB of images (one-time)
 - Future updates only download changed layers (faster)
 
-> **📝 Note for Early Adopters:** If you encounter "build path does not exist" errors, it means Docker Hub images haven't been published yet. In this case, you'll need to clone all service repositories. See [Development Setup](#development-setup) below for multi-repo cloning instructions.
+> **📝 Note:** fm-agent-service and fm-dashboard currently build from local source. You'll need the `../fm-agent-service` and `../faultmaven-dashboard` directories available. See [Development Setup](#development-setup) for multi-repo cloning instructions.
 
 ### Prerequisites
 
@@ -583,9 +584,9 @@ rm -rf ./data/
 
 ## Development Setup
 
-### ⚠️ For Contributors & Early Adopters Only
+### ⚠️ For Contributors Only
 
-If Docker Hub images aren't available yet, you'll need to clone all service repositories and build locally:
+If you want to build services from source instead of using pre-built Docker Hub images:
 
 ```bash
 # Create a workspace directory
@@ -617,7 +618,9 @@ done
 cd faultmaven-deploy
 cp .env.example .env
 # Edit .env with your settings
-./faultmaven start
+
+# Use docker-compose.dev.yml to build from local repositories
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
 **Directory structure after cloning:**
