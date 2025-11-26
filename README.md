@@ -137,9 +137,8 @@ Configure one provider and it handles chat, knowledge base queries, and all AI o
 
 - ☁️ **Cloud LLM**: Inference via API (only prompts/responses sent, no tracking)
 - 🖥️ **Local LLM**: Everything runs locally (zero external calls)
-- 🔀 **Hybrid**: Smart routing based on task type
 
-**Your data never leaves your laptop** - only anonymous prompts/responses go to the LLM provider you choose.
+**Privacy:** Self-hosted FaultMaven uses **one LLM provider for all tasks**. Only prompts and responses are sent to your chosen provider (cloud) or everything stays local (local LLM). Your case data, evidence files, and knowledge base never leave your machine.
 
 ---
 
