@@ -615,7 +615,7 @@ cmd_verify() {
         print_error "Failed to create test case"
         test_failed=true
     else
-        local case_id=$(echo "$case_response" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        local case_id=$(echo "$case_response" | grep -o '"case_id":"[^"]*"' | head -1 | cut -d'"' -f4)
         if [ -n "$case_id" ]; then
             print_success "Case created (ID: $case_id)"
         else
