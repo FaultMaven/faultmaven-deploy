@@ -43,7 +43,7 @@ This repository provides a complete Docker Compose deployment for self-hosting *
 
 ## Quick Start
 
-**⚡ Five Simple Steps:**
+**⚡ Four Simple Steps:**
 
 ```bash
 # 1. Install: Clone the repository
@@ -63,27 +63,30 @@ cp .env.example .env
 ./faultmaven start
 # Docker automatically pulls pre-built images from Docker Hub
 # Waits up to 120 seconds for all services to pass health checks
-
-# 5. Verify: Test the installation
-./faultmaven verify
-# Waits 15 seconds for ChromaDB to stabilize, then runs end-to-end tests
 ```
 
 **Expected output:**
 
 ```text
-🔍 Running FaultMaven verification tests...
-⏳ Waiting for services to stabilize (15 seconds)...
+✅ Docker is running
+✅ System has 15.5 GB RAM (8 GB required)
+✅ Environment file configured (.env)
+✅ Resource limits configured
 
-✅ All services healthy
-✅ Case created successfully
-✅ Evidence uploaded successfully
-✅ AI agent responded
-✅ Knowledge base operational
-🎉 All tests passed! FaultMaven is ready to use.
+Starting Docker containers...
+⏳ Waiting for services to become healthy (up to 120 seconds)...
+
+✅ FaultMaven services started successfully!
+
+Next steps:
+  1. Check status:  ./faultmaven status
+  2. View logs:     ./faultmaven logs
+  3. Access services:
+     - API Gateway: http://192.168.0.200:8090/docs
+     - Dashboard:   http://192.168.0.200:3000
 ```
 
-**If verification fails:** Run `./faultmaven logs` to see error details, or see [Troubleshooting](#troubleshooting) below.
+**If services don't start:** Run `./faultmaven logs` to see error details, or see [Troubleshooting](#troubleshooting) below.
 
 **What happens during deployment:**
 
@@ -168,11 +171,11 @@ The `./faultmaven` script simplifies deployment with pre-flight checks and resou
 # Stop services (preserves data)
 ./faultmaven stop
 
-# Verify installation (test end-to-end functionality)
-./faultmaven verify
-
 # Reset to factory defaults (DANGER: deletes all data)
 ./faultmaven clean
+
+# Optional: Run end-to-end verification tests (troubleshooting only)
+./faultmaven verify
 
 # Show help
 ./faultmaven help
@@ -529,7 +532,7 @@ docker-compose ps chromadb
 docker-compose logs chromadb
 
 # Test ChromaDB manually
-curl http://localhost:8007/api/v1/heartbeat
+curl http://<SERVER_HOST>:8007/api/v1/heartbeat
 
 # If ChromaDB is slow to start, wait 10-15 seconds then restart dependent services
 docker-compose restart fm-knowledge-service
