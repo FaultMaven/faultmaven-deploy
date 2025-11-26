@@ -61,9 +61,17 @@ cp .env.example .env
 
 # 4. Run: Start everything with one command
 ./faultmaven start
+# Docker automatically pulls pre-built images from Docker Hub
 ```
 
 **That's it!** FaultMaven is now running.
+
+**What happens during deployment:**
+
+- Docker pulls pre-built container images from [Docker Hub](https://hub.docker.com/u/faultmaven)
+- No compilation or building required - images are ready to run
+- First deployment downloads ~2-3GB of images (one-time)
+- Future updates only download changed layers (faster)
 
 ### Prerequisites
 
@@ -181,7 +189,7 @@ cp .env.example .env
 # Create resource limits (recommended)
 cp docker-compose.override.yml.example docker-compose.override.yml
 
-# Start all services
+# Start all services (pulls pre-built images from Docker Hub)
 docker-compose up -d
 
 # Check status
