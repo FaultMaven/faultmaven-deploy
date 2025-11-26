@@ -140,9 +140,7 @@ services:
       start_period: 40s
 
   fm-agent-service:
-    build:
-      context: ../fm-agent-service
-      dockerfile: Dockerfile
+    image: faultmaven/fm-agent-service:latest
     container_name: fm-agent-service
     ports:
       - "8006:8000"
@@ -216,12 +214,10 @@ services:
 
   # Dashboard - Knowledge Base Management UI
   fm-dashboard:
-    build:
-      context: ../faultmaven-dashboard
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=http://${SERVER_HOST}:8090
+    image: faultmaven/faultmaven-dashboard:latest
     container_name: fm-dashboard
+    environment:
+      - VITE_API_URL=http://${SERVER_HOST}:8090
     ports:
       - "3000:80"
     depends_on:
