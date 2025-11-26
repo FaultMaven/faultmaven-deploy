@@ -122,7 +122,7 @@ Configure one provider and it handles chat, knowledge base queries, and all AI o
 
 > **Need task-specific LLM routing?** The [FaultMaven Managed SaaS](https://github.com/FaultMaven/FaultMaven#2-managed-saas) supports hybrid deployment with automatic routing: cloud LLMs for complex diagnostics, local LLMs for knowledge base queries (10x+ cost savings).
 
-**What runs locally (always):**
+**What runs locally:**
 
 - ✅ 6 microservices: auth, session, case, knowledge, evidence, agent
 - ✅ API Gateway (single entry point)
@@ -131,14 +131,10 @@ Configure one provider and it handles chat, knowledge base queries, and all AI o
 - ✅ ChromaDB vector database
 - ✅ Redis session store
 - ✅ SQLite data storage
-- ✅ All your sensitive data stays on your machine
 
-**What varies by LLM choice:**
+**Privacy & Data Control:**
 
-- ☁️ **Cloud LLM**: Inference via API (only prompts/responses sent, no tracking)
-- 🖥️ **Local LLM**: Everything runs locally (zero external calls)
-
-**Privacy:** Self-hosted FaultMaven uses **one LLM provider for all tasks**. Only prompts and responses are sent to your chosen provider (cloud) or everything stays local (local LLM). Your case data, evidence files, and knowledge base never leave your machine.
+Self-hosted FaultMaven uses **one LLM provider for all tasks** (chat, analysis, knowledge base). Your case data, evidence files, and knowledge base **never leave your machine**. Only AI prompts and responses are sent to your chosen LLM provider (if using cloud LLM).
 
 ---
 
