@@ -140,10 +140,11 @@ Self-hosted FaultMaven uses **one LLM for all operations** - chat, analysis, and
 
 **What runs locally:**
 
-- ✅ 6 microservices: auth, session, case, knowledge, evidence, agent
-- ✅ API Gateway (single entry point)
-- ✅ Dashboard web UI for Global KB management
-- ✅ 2 background workers: Celery worker + Celery Beat scheduler
+- ✅ 10 Docker containers: 6 microservices + API Gateway + Dashboard + 2 job workers
+  - **Microservices**: auth, session, case, knowledge, evidence, agent
+  - **API Gateway**: Single entry point for all requests
+  - **Dashboard**: Web UI for Global KB management
+  - **Job Workers**: Celery worker + Celery Beat scheduler
 - ✅ ChromaDB vector database
 - ✅ Redis session store
 - ✅ SQLite data storage
@@ -480,26 +481,34 @@ curl -X POST http://<SERVER_HOST>:8090/api/v1/agent/query \
 
 ---
 
-## Known Limitations
+## Security Architecture
 
-### Service-to-Service Authentication (In Progress)
+### Service-to-Service Authentication
 
-**Current Status**: Internal service-to-service calls (e.g., agent-service → case-service) require user authentication headers but service clients don't provide service identity.
+FaultMaven implements JWT-based service authentication for secure internal communication between microservices.
 
-**Impact**:
+**Key Features**:
 
-- Agent service cannot retrieve case data (returns 401 Unauthorized)
-- Service-to-service communication requires manual user context propagation
-- No built-in service identity or permissions model
+- **Service Identity**: Each microservice authenticates with a signed JWT token
+- **User Context Propagation**: Original user identity flows through the service chain
+- **Asymmetric Cryptography**: Auth service signs tokens with private key, services verify with public key
+- **Local Verification**: Services validate JWTs without calling auth service (zero network overhead)
+- **Granular Permissions**: Each service has specific allowed operations (e.g., `case:read`, `knowledge:search`)
 
-**Workaround**: Currently being addressed with JWT-based service authentication implementation.
+**How It Works**:
 
-**Technical Details**:
+1. Services request JWT tokens from auth service on startup
+2. Internal API calls include `Authorization: Bearer <service-jwt>` header
+3. Target services verify JWT signature locally using public key
+4. Permission checks enforce access control based on service identity
+5. User context (`X-User-ID` header) flows through for audit/logging
 
-- Services use internal Docker network ports (e.g., `fm-case-service:8000`)
-- Case service requires `X-User-ID` header for all requests
-- Service clients (e.g., `CaseServiceClient`) only send `Content-Type` header
-- No mechanism to pass service identity or user context between services
+**Benefits**:
+
+- Zero-trust security model for internal APIs
+- Complete audit trail of which service performed each action
+- Protection against unauthorized service-to-service calls
+- Ready for service mesh integration (mTLS)
 
 ---
 
