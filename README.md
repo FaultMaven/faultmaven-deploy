@@ -217,6 +217,7 @@ curl http://<SERVER_HOST>:8003/health  # Case Service
 curl http://<SERVER_HOST>:8004/health  # Knowledge Service
 curl http://<SERVER_HOST>:8005/health  # Evidence Service
 curl http://<SERVER_HOST>:8006/health  # Agent Service
+curl http://<SERVER_HOST>:8090/health  # API Gateway
 
 # Access web dashboard
 # Replace <SERVER_HOST> with your server's IP address (from .env SERVER_HOST)
@@ -476,6 +477,29 @@ curl -X POST http://<SERVER_HOST>:8090/api/v1/agent/query \
 ```
 
 **See [QUICKSTART.md](QUICKSTART.md) for complete API reference.**
+
+---
+
+## Known Limitations
+
+### Service-to-Service Authentication (In Progress)
+
+**Current Status**: Internal service-to-service calls (e.g., agent-service → case-service) require user authentication headers but service clients don't provide service identity.
+
+**Impact**:
+
+- Agent service cannot retrieve case data (returns 401 Unauthorized)
+- Service-to-service communication requires manual user context propagation
+- No built-in service identity or permissions model
+
+**Workaround**: Currently being addressed with JWT-based service authentication implementation.
+
+**Technical Details**:
+
+- Services use internal Docker network ports (e.g., `fm-case-service:8000`)
+- Case service requires `X-User-ID` header for all requests
+- Service clients (e.g., `CaseServiceClient`) only send `Content-Type` header
+- No mechanism to pass service identity or user context between services
 
 ---
 
