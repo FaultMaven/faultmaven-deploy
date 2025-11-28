@@ -1,0 +1,178 @@
+name: Integration Test
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: 'Service name to test (e.g., fm-case-service)'
+        required: true
+        type: string
+      image_tag:
+        description: 'Image tag to test (e.g., sha-abc123)'
+        required: true
+        type: string
+      skip_deploy_verification:
+        description: 'Skip ./faultmaven verify step (for testing workflow only)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout faultmaven-deploy
+        uses: actions/checkout@v4
+        with:
+          repository: FaultMaven/faultmaven-deploy
+          ref: main
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Verify service exists in docker-compose.yml
+        run: |
+          if ! yq eval ".services | has(\"${{ inputs.service_name }}\")" docker-compose.yml | grep -q "true"; then
+            echo "❌ Error: Service '${{ inputs.service_name }}' not found in docker-compose.yml"
+            echo "Available services:"
+            yq eval '.services | keys' docker-compose.yml
+            exit 1
+          fi
+          echo "✅ Service '${{ inputs.service_name }}' found in docker-compose.yml"
+
+      - name: Inject new image tag
+        run: |
+          echo "Updating ${{ inputs.service_name }} image to ghcr.io/faultmaven/${{ inputs.service_name }}:${{ inputs.image_tag }}"
+          yq -i ".services.${{ inputs.service_name }}.image = \"ghcr.io/faultmaven/${{ inputs.service_name }}:${{ inputs.image_tag }}\"" docker-compose.yml
+
+          # Verify the change
+          echo "Updated image:"
+          yq eval ".services.${{ inputs.service_name }}.image" docker-compose.yml
+
+      - name: Create minimal .env file
+        run: |
+          cat > .env << 'EOF'
+          # Minimal configuration for integration tests
+          SERVER_HOST=localhost
+          DASHBOARD_USERNAME=admin
+          DASHBOARD_PASSWORD=changeme123
+
+          # Placeholder API keys (tests don't require real keys)
+          OPENAI_API_KEY=sk-test-placeholder
+          ANTHROPIC_API_KEY=sk-ant-test-placeholder
+          GROQ_API_KEY=gsk-test-placeholder
+          EOF
+
+      - name: Make faultmaven CLI executable
+        run: chmod +x ./faultmaven
+
+      - name: Start stack
+        run: |
+          echo "Starting FaultMaven stack with updated ${{ inputs.service_name }} image..."
+          ./faultmaven start || {
+            echo "❌ Failed to start stack"
+            echo "Collecting logs..."
+            ./faultmaven logs
+            exit 1
+          }
+
+      - name: Wait for services to stabilize
+        run: |
+          echo "Waiting 30 seconds for services to stabilize..."
+          sleep 30
+
+      - name: Check service health
+        run: |
+          echo "Checking health of ${{ inputs.service_name }}..."
+
+          # Map service names to their external ports
+          case "${{ inputs.service_name }}" in
+            fm-auth-service)
+              PORT=8001
+              ;;
+            fm-session-service)
+              PORT=8002
+              ;;
+            fm-case-service)
+              PORT=8003
+              ;;
+            fm-knowledge-service)
+              PORT=8004
+              ;;
+            fm-evidence-service)
+              PORT=8005
+              ;;
+            fm-agent-service)
+              PORT=8006
+              ;;
+            fm-api-gateway)
+              PORT=8090
+              ;;
+            *)
+              echo "⚠️  No health check configured for ${{ inputs.service_name }}"
+              exit 0
+              ;;
+          esac
+
+          # Try health check endpoint
+          for i in {1..10}; do
+            if curl -f -s http://localhost:${PORT}/health > /dev/null 2>&1; then
+              echo "✅ Service ${{ inputs.service_name }} is healthy (http://localhost:${PORT}/health)"
+              exit 0
+            fi
+            echo "Attempt $i/10: Service not ready yet, waiting 5 seconds..."
+            sleep 5
+          done
+
+          echo "❌ Service ${{ inputs.service_name }} failed health check after 50 seconds"
+          echo "Collecting logs for diagnosis..."
+          docker logs ${{ inputs.service_name }} || true
+          exit 1
+
+      - name: Run verification tests
+        if: ${{ !inputs.skip_deploy_verification }}
+        run: |
+          echo "Running ./faultmaven verify..."
+          ./faultmaven verify || {
+            echo "❌ Verification tests failed"
+            echo "Collecting logs..."
+            ./faultmaven logs
+            exit 1
+          }
+
+      - name: Integration test summary
+        if: success()
+        run: |
+          echo "✅ Integration test passed for ${{ inputs.service_name }}:${{ inputs.image_tag }}"
+          echo ""
+          echo "Summary:"
+          echo "- Service: ${{ inputs.service_name }}"
+          echo "- Image: ghcr.io/faultmaven/${{ inputs.service_name }}:${{ inputs.image_tag }}"
+          echo "- Stack started successfully"
+          echo "- Health check passed"
+          echo "- Verification tests passed"
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "❌ Integration test failed for ${{ inputs.service_name }}:${{ inputs.image_tag }}"
+          echo ""
+          echo "Collecting all service logs..."
+          ./faultmaven logs
+          echo ""
+          echo "Docker Compose status:"
+          docker compose ps
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "Stopping FaultMaven stack..."
+          ./faultmaven stop || docker compose down || true
