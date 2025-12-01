@@ -11,7 +11,7 @@
 
 This repository provides a complete Docker Compose deployment for self-hosting **FaultMaven**, an AI-powered troubleshooting copilot that helps you diagnose and resolve technical issues faster.
 
-**📖 For architectural details and contributing:** See the main [FaultMaven](https://github.com/FaultMaven/FaultMaven) repository.
+**📖 For architectural details and contributing:** See the main [FaultMaven](https://github.com/FaultMaven/faultmaven) repository.
 
 **What you get with self-hosted deployment:**
 
@@ -430,9 +430,9 @@ docker-compose up -d
 
 ## 🚀 Need Production-Ready Infrastructure?
 
-> **Self-hosted is single-user only.** For production use, try **[FaultMaven Managed SaaS](https://github.com/FaultMaven/FaultMaven#2-managed-saas)** — available **for free** for individuals and teams.
+> **Self-hosted is single-user only.** For production use, try **[FaultMaven Managed SaaS](https://github.com/FaultMaven/faultmaven#2-managed-saas)** — available **for free** for individuals and teams.
 >
-> Get elastic resource management, optimized performance, and enterprise-grade features. **[Learn More →](https://github.com/FaultMaven/FaultMaven#2-managed-saas)**
+> Get elastic resource management, optimized performance, and enterprise-grade features. **[Learn More →](https://github.com/FaultMaven/faultmaven#2-managed-saas)**
 
 ---
 
@@ -694,9 +694,9 @@ This deployment uses microservices from:
 ## Documentation
 
 - **[QUICKSTART.md](QUICKSTART.md)** - Detailed setup and usage guide
-- **[Architecture Overview](https://github.com/FaultMaven/FaultMaven/blob/main/docs/ARCHITECTURE.md)** - System design
-- **[Deployment Guide](https://github.com/FaultMaven/FaultMaven/blob/main/docs/DEPLOYMENT.md)** - Advanced deployment options and configurations
-- **[API Reference](https://github.com/FaultMaven/FaultMaven/blob/main/docs/API.md)** - Complete endpoint documentation
+- **[Architecture Overview](https://github.com/FaultMaven/faultmaven/blob/main/docs/ARCHITECTURE.md)** - System design
+- **[Deployment Guide](https://github.com/FaultMaven/faultmaven/blob/main/docs/DEPLOYMENT.md)** - Advanced deployment options and configurations
+- **[API Reference](https://github.com/FaultMaven/faultmaven/blob/main/docs/API.md)** - Complete endpoint documentation
 
 ---
 
@@ -718,13 +718,13 @@ This deployment uses microservices from:
 
 - **GitHub Issues**: [Report bugs](https://github.com/FaultMaven/faultmaven-deploy/issues)
 - **GitHub Discussions**: [Ask questions](https://github.com/FaultMaven/faultmaven-deploy/discussions)
-- **Main Project**: [FaultMaven](https://github.com/FaultMaven/FaultMaven)
+- **Main Project**: [FaultMaven](https://github.com/FaultMaven/faultmaven)
 
 ---
 
 ## Contributing
 
-Contributions welcome! See [CONTRIBUTING.md](https://github.com/FaultMaven/FaultMaven/blob/main/CONTRIBUTING.md) for guidelines.
+Contributions welcome! See [CONTRIBUTING.md](https://github.com/FaultMaven/faultmaven/blob/main/CONTRIBUTING.md) for guidelines.
 
 **Quick start:**
 1. Fork the repository
