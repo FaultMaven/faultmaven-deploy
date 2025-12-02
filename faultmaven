@@ -15,6 +15,31 @@ NC='\033[0m' # No Color
 MIN_RAM_GB=8
 REQUIRED_COMMANDS=("docker")
 
+# Health check endpoints: "port:service_name"
+# Used by cmd_status() and cmd_verify() for consistency
+HEALTH_CHECK_SERVICES=(
+    "8001:Auth Service"
+    "8002:Session Service"
+    "8003:Case Service"
+    "8004:Knowledge Service"
+    "8005:Evidence Service"
+    "8006:Agent Service"
+    "8090:API Gateway"
+)
+
+# LLM provider environment variables and display names
+# Order determines priority (first configured = primary provider)
+LLM_PROVIDERS=(
+    "OPENAI_API_KEY:OpenAI"
+    "ANTHROPIC_API_KEY:Anthropic"
+    "GROQ_API_KEY:Groq"
+    "GEMINI_API_KEY:Gemini"
+    "FIREWORKS_API_KEY:Fireworks"
+    "HUGGINGFACE_API_KEY:HuggingFace"
+    "OPENROUTER_API_KEY:OpenRouter"
+    "LOCAL_LLM_API_KEY:Local LLM"
+)
+
 #######################################
 # Utility Functions
 #######################################
@@ -141,38 +166,14 @@ check_env_file() {
     local has_api_key=false
     local primary_provider=""
 
-    if [ -n "$OPENAI_API_KEY" ] && [ -z "$primary_provider" ]; then
-        has_api_key=true
-        primary_provider="OpenAI"
-    fi
-    if [ -n "$ANTHROPIC_API_KEY" ] && [ -z "$primary_provider" ]; then
-        has_api_key=true
-        primary_provider="Anthropic"
-    fi
-    if [ -n "$GROQ_API_KEY" ] && [ -z "$primary_provider" ]; then
-        has_api_key=true
-        primary_provider="Groq"
-    fi
-    if [ -n "$GEMINI_API_KEY" ] && [ -z "$primary_provider" ]; then
-        has_api_key=true
-        primary_provider="Gemini"
-    fi
-    if [ -n "$FIREWORKS_API_KEY" ] && [ -z "$primary_provider" ]; then
-        has_api_key=true
-        primary_provider="Fireworks"
-    fi
-    if [ -n "$HUGGINGFACE_API_KEY" ] && [ -z "$primary_provider" ]; then
-        has_api_key=true
-        primary_provider="HuggingFace"
-    fi
-    if [ -n "$OPENROUTER_API_KEY" ] && [ -z "$primary_provider" ]; then
-        has_api_key=true
-        primary_provider="OpenRouter"
-    fi
-    if [ -n "$LOCAL_LLM_API_KEY" ] && [ -z "$primary_provider" ]; then
-        has_api_key=true
-        primary_provider="Local LLM"
-    fi
+    for provider in "${LLM_PROVIDERS[@]}"; do
+        local env_var="${provider%%:*}"
+        local display_name="${provider#*:}"
+        if [ -n "${!env_var}" ] && [ -z "$primary_provider" ]; then
+            has_api_key=true
+            primary_provider="$display_name"
+        fi
+    done
 
     if [ "$has_api_key" = false ]; then
         print_error "No LLM API key configured"
@@ -361,18 +362,7 @@ cmd_status() {
     echo "Health Checks:"
     echo ""
 
-    # Health check endpoints (only services that expose health endpoints)
-    local services=(
-        "8001:Auth Service"
-        "8002:Session Service"
-        "8003:Case Service"
-        "8004:Knowledge Service"
-        "8005:Evidence Service"
-        "8006:Agent Service"
-        "8090:API Gateway"
-    )
-
-    for service in "${services[@]}"; do
+    for service in "${HEALTH_CHECK_SERVICES[@]}"; do
         local port="${service%%:*}"
         local name="${service#*:}"
 
@@ -493,7 +483,7 @@ cmd_prune() {
 
 cmd_nuke() {
     print_header
-    print_warning "⚠️  NUCLEAR OPTION - This will:"
+    print_warning "NUCLEAR OPTION - This will:"
     echo "  - Kill all FaultMaven containers"
     echo "  - Remove all FaultMaven images and volumes"
     echo "  - Remove ALL Docker build cache (affects other projects!)"
@@ -547,7 +537,7 @@ cmd_nuke() {
 
 cmd_verify() {
     print_header
-    echo "🔍 Running FaultMaven verification tests..."
+    print_info "Running FaultMaven verification tests..."
     echo ""
 
     # Source .env to get SERVER_HOST
@@ -571,18 +561,9 @@ cmd_verify() {
 
     # Test 1: Health checks
     print_info "Testing service health endpoints..."
-    local services=(
-        "8001:Auth Service"
-        "8002:Session Service"
-        "8003:Case Service"
-        "8004:Knowledge Service"
-        "8005:Evidence Service"
-        "8006:Agent Service"
-        "8090:API Gateway"
-    )
 
     local all_healthy=true
-    for service in "${services[@]}"; do
+    for service in "${HEALTH_CHECK_SERVICES[@]}"; do
         local port="${service%%:*}"
         local name="${service#*:}"
 
@@ -714,7 +695,8 @@ EOF
 
     # Final verdict
     if [ "$test_failed" = false ]; then
-        print_success "🎉 All tests passed! FaultMaven is ready to use."
+        echo ""
+        print_success "All tests passed! FaultMaven is ready to use."
         echo ""
         echo "Next steps:"
         echo "  1. Install browser extension (see README.md)"
@@ -723,7 +705,7 @@ EOF
         echo ""
     else
         echo ""
-        print_error "❌ Some tests failed. Troubleshooting steps:"
+        print_error "Some tests failed. Troubleshooting steps:"
         echo "  1. Check service logs: ./faultmaven logs"
         echo "  2. Verify .env configuration"
         echo "  3. Ensure LLM API key is valid"

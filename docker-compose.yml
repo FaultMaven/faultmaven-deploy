@@ -1,3 +1,11 @@
+# Health Check Methods:
+# - Python services: urllib.request (available in all Python images)
+# - Dashboard (nginx): wget (lightweight, available in alpine)
+# - Redis: redis-cli ping (native)
+# - Celery worker: celery inspect ping
+# - Celery beat: file existence check (celerybeat-schedule)
+# - ChromaDB: no health check (lacks curl/wget; services use retry logic)
+
 services:
   # Infrastructure services
   redis:
