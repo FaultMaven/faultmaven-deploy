@@ -11,7 +11,12 @@
 
 This repository provides a complete Docker Compose deployment for self-hosting **FaultMaven**, an AI-powered troubleshooting copilot that helps you diagnose and resolve technical issues faster.
 
-**📖 For architectural details and contributing:** See the main [FaultMaven](https://github.com/FaultMaven/faultmaven) repository.
+**📖 Resources:**
+- **[Main Repository](https://github.com/FaultMaven/faultmaven)** — Architecture, contributing, system overview
+- **[Product Overview](https://faultmaven.ai/product)** — See what FaultMaven can do
+- **[Use Cases](https://faultmaven.ai/use-cases)** — Real-world troubleshooting scenarios
+- **[Roadmap](https://faultmaven.ai/roadmap)** — What we're building next
+- **[Beta Founders Program](https://faultmaven.ai/founders)** — Get free Enterprise Cloud access
 
 **What you get with self-hosted deployment:**
 
@@ -21,6 +26,7 @@ This repository provides a complete Docker Compose deployment for self-hosting *
 - 🗄️ **Portable SQLite Database** - Zero configuration, single file, easy backups
 - 🔍 **Vector Search** - ChromaDB for semantic knowledge retrieval
 - ⚙️ **Background Processing** - Celery + Redis for async operations
+- 🧠 **Continuous Learning** - Every resolved case automatically indexes solutions for future reference
 
 **Deploy everything in 2 minutes with a single command.**
 
@@ -28,16 +34,14 @@ This repository provides a complete Docker Compose deployment for self-hosting *
 
 ## Who Is This For?
 
-**✅ Perfect For:**
-- 👨‍💻 **Developers** - Study architecture, contribute code, learn AI troubleshooting
-- 🔬 **Tinkerers** - Experiment with LLMs, RAG, and agentic workflows
-- 🔐 **Privacy-conscious** - Keep sensitive data on-premises (air-gapped environments)
-- 🌍 **Open-source contributors** - Improve the product, add features
+**✅ Self-Hosted is perfect for:**
 
-**❌ Not For:**
-- Production team use (single-user architecture)
-- Collaboration workflows (no case/knowledge sharing)
-- Enterprise compliance needs (no SSO/RBAC)
+- 👨‍💻 **Individual Engineers** - Personal troubleshooting assistant with your own knowledge base
+- 🔬 **Developers & Tinkerers** - Study architecture, experiment with LLMs, RAG, and agentic workflows
+- 🔐 **Privacy-Conscious Teams** - Keep sensitive data on-premises in air-gapped environments
+- 🌍 **Open-Source Contributors** - Improve the product, add features, learn AI troubleshooting
+
+**Need team collaboration, SSO, or case sharing?** Check out [Enterprise Cloud](https://faultmaven.ai/founders) — free during private beta.
 
 ---
 
@@ -430,9 +434,9 @@ docker-compose up -d
 
 ## 🚀 Need Production-Ready Infrastructure?
 
-> **Self-hosted is single-user only.** For production use, try **[FaultMaven Managed SaaS](https://github.com/FaultMaven/faultmaven#2-managed-saas)** — available **for free** for individuals and teams.
+> **Self-hosted is single-user only.** For production use with team collaboration, SSO, and high availability, check out **[FaultMaven Enterprise Cloud](https://faultmaven.ai/founders)** — available **for free** during private beta through our Beta Founders Program.
 >
-> Get elastic resource management, optimized performance, and enterprise-grade features. **[Learn More →](https://github.com/FaultMaven/faultmaven#2-managed-saas)**
+> Get elastic resource management, optimized performance, and enterprise-grade features. **[Join Beta Founders Program →](https://faultmaven.ai/founders)**
 
 ---
 
@@ -716,9 +720,17 @@ This deployment uses microservices from:
 
 ## Support
 
-- **GitHub Issues**: [Report bugs](https://github.com/FaultMaven/faultmaven-deploy/issues)
-- **GitHub Discussions**: [Ask questions](https://github.com/FaultMaven/faultmaven-deploy/discussions)
-- **Main Project**: [FaultMaven](https://github.com/FaultMaven/faultmaven)
+### Community Support (Free)
+
+- **[GitHub Issues](https://github.com/FaultMaven/faultmaven-deploy/issues)** — Report bugs
+- **[GitHub Discussions](https://github.com/FaultMaven/faultmaven-deploy/discussions)** — Ask questions
+- **[Main Project](https://github.com/FaultMaven/faultmaven)** — Documentation and guides
+- **[Website](https://faultmaven.ai)** — Product info, use cases, roadmap
+
+### Enterprise Support
+
+- **Email:** [support@faultmaven.ai](mailto:support@faultmaven.ai)
+- **Enterprise SLA:** Included with Enterprise Cloud subscription
 
 ---
 
