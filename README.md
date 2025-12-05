@@ -32,6 +32,14 @@ This repository provides a complete Docker Compose deployment for self-hosting *
 
 ---
 
+## Why FaultMaven?
+
+Your monitoring tools show **what** broke. Generic LLMs guess **why**, but can't see your infrastructure. FaultMaven bridges this gap—correlating your logs, configs, and code to deliver answers grounded in your actual system.
+
+→ [See use cases](https://faultmaven.ai/use-cases) | [Product overview](https://github.com/FaultMaven/faultmaven)
+
+---
+
 ## Who Is This For?
 
 **✅ Self-Hosted is perfect for:**
@@ -429,9 +437,9 @@ docker-compose up -d
 
 ---
 
-## 🚀 Need Production-Ready Infrastructure?
+## 🚀 Need Team Collaboration?
 
-> **Self-hosted is single-user only.** For production use with team collaboration, SSO, and high availability, check out **[FaultMaven Enterprise Cloud](https://faultmaven.ai/founders)** — available **for free** during private beta through our Beta Founders Program.
+> **Self-hosted is designed for individual engineers.** Need team collaboration, SSO, or shared knowledge bases? Check out **[FaultMaven Enterprise Cloud](https://faultmaven.ai/founders)** — available **for free** during private beta through our Beta Founders Program.
 >
 > Get elastic resource management, optimized performance, and enterprise-grade features. **[Join Beta Founders Program →](https://faultmaven.ai/founders)**
 
