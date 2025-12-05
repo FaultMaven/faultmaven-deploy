@@ -28,7 +28,7 @@ This repository provides a complete Docker Compose deployment for self-hosting *
 - ⚙️ **Background Processing** - Celery + Redis for async operations
 - 🧠 **Continuous Learning** - Every resolved case automatically indexes solutions for future reference
 
-**Deploy everything in 2 minutes with a single command.**
+**Deploy with a single command.** First run downloads ~2-3GB of images (5-10 minutes). Subsequent starts take seconds.
 
 ---
 
@@ -229,10 +229,11 @@ curl http://<SERVER_HOST>:8090/health  # API Gateway
 # Use 'localhost' only if accessing from the server itself
 open http://<SERVER_HOST>:3000
 # Example: http://192.168.0.200:3000
-
-# ⚠️ SECURITY WARNING: Change default credentials immediately!
-# Login: admin / changeme123
 ```
+
+⚠️ **SECURITY WARNING:** Default credentials are for local testing only. Change immediately for any network-accessible deployment. See [SECURITY.md](https://github.com/FaultMaven/faultmaven/blob/main/docs/SECURITY.md).
+
+**Default login:** `admin` / `changeme123`
 
 Expected health response:
 ```json
@@ -254,15 +255,9 @@ Expected health response:
 
 **⚠️ IMPORTANT:** The browser extension is **REQUIRED** to interact with the FaultMaven AI agent. The backend server alone does not provide a chat interface.
 
-#### Installation Options
+#### Installation
 
-**Option 1: Chrome Web Store** (Recommended)
-```bash
-# Coming soon - FaultMaven Copilot will be published to the Chrome Web Store
-# Search for "FaultMaven Copilot" in Chrome Web Store
-```
-
-**Option 2: Install from GitHub** (Available Now)
+**Install from GitHub** (Available Now)
 ```bash
 # 1. Download the latest release
 git clone https://github.com/FaultMaven/faultmaven-copilot.git
@@ -278,6 +273,8 @@ pnpm build
 # - Click "Load unpacked"
 # - Select the faultmaven-copilot/dist directory
 ```
+
+**Chrome Web Store** — Coming soon
 
 #### Configure Extension
 
@@ -706,15 +703,7 @@ This deployment uses microservices from:
 
 ## License
 
-**Apache 2.0 License** - See [LICENSE](LICENSE) for details.
-
-**Why Apache 2.0?**
-- ✅ Use commercially without restrictions
-- ✅ Fork, modify, commercialize freely
-- ✅ Patent grant protection
-- ✅ Enterprise-friendly (same license as Kubernetes, Android)
-
-**TL;DR:** You can use FaultMaven for anything, including building commercial products. No strings attached.
+**Apache 2.0** — Use commercially, fork freely. Same license as Kubernetes. See [LICENSE](LICENSE) for details.
 
 ---
 
@@ -722,8 +711,8 @@ This deployment uses microservices from:
 
 ### Community Support (Free)
 
-- **[GitHub Issues](https://github.com/FaultMaven/faultmaven-deploy/issues)** — Report bugs
-- **[GitHub Discussions](https://github.com/FaultMaven/faultmaven-deploy/discussions)** — Ask questions
+- **[Deployment Issues](https://github.com/FaultMaven/faultmaven-deploy/issues)** — Report deployment-specific bugs
+- **[GitHub Discussions](https://github.com/FaultMaven/faultmaven/discussions)** — Ask questions, share tips
 - **[Main Project](https://github.com/FaultMaven/faultmaven)** — Documentation and guides
 - **[Website](https://faultmaven.ai)** — Product info, use cases, roadmap
 
