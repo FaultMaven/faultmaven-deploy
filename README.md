@@ -1,5 +1,8 @@
 # FaultMaven - Self-Hosted Deployment
 
+> **Part of [FaultMaven](https://github.com/FaultMaven/faultmaven)** —
+> The AI-Powered Troubleshooting Copilot
+
 **An AI-powered troubleshooting copilot you can run anywhere for free.**
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -717,6 +720,9 @@ This deployment uses microservices from:
 
 ## Support
 
+- **Discussions:** [GitHub Discussions](https://github.com/FaultMaven/faultmaven/discussions)
+- **Issues:** [GitHub Issues](https://github.com/FaultMaven/faultmaven-deploy/issues)
+
 ### Community Support (Free)
 
 - **[Deployment Issues](https://github.com/FaultMaven/faultmaven-deploy/issues)** — Report deployment-specific bugs
@@ -733,7 +739,7 @@ This deployment uses microservices from:
 
 ## Contributing
 
-Contributions welcome! See [CONTRIBUTING.md](https://github.com/FaultMaven/faultmaven/blob/main/CONTRIBUTING.md) for guidelines.
+Contributions welcome! See our [Contributing Guide](https://github.com/FaultMaven/.github/blob/main/CONTRIBUTING.md) for detailed guidelines.
 
 **Quick start:**
 1. Fork the repository
