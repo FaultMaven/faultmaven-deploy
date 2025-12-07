@@ -67,12 +67,13 @@ jobs:
           SERVER_HOST=localhost
           DASHBOARD_USERNAME=admin
           DASHBOARD_PASSWORD=changeme123
-
           # Placeholder API keys (tests don't require real keys)
           OPENAI_API_KEY=sk-test-placeholder
           ANTHROPIC_API_KEY=sk-ant-test-placeholder
           GROQ_API_KEY=gsk-test-placeholder
           EOF
+          # Remove leading whitespace from .env (heredoc indentation artifact)
+          sed -i 's/^[[:space:]]*//' .env
 
       - name: Make faultmaven CLI executable
         run: chmod +x ./faultmaven
@@ -125,16 +126,36 @@ jobs:
             fm-api-gateway)
               PORT=8090
               ;;
+            fm-dashboard)
+              PORT=3000
+              ;;
+            fm-job-worker|fm-job-worker-beat)
+              echo "⚠️  Worker services don't expose HTTP ports, checking container status..."
+              if docker compose ps --format json | jq -e ".[] | select(.Service == \"$SERVICE_NAME\" and .State == \"running\")" > /dev/null 2>&1; then
+                echo "✅ Service $SERVICE_NAME is running"
+                exit 0
+              else
+                echo "❌ Service $SERVICE_NAME is not running"
+                exit 1
+              fi
+              ;;
             *)
               echo "⚠️  No health check configured for $SERVICE_NAME"
               exit 0
               ;;
           esac
 
+          # Determine health check endpoint (dashboard uses "/" instead of "/health")
+          if [ "$SERVICE_NAME" = "fm-dashboard" ]; then
+            HEALTH_ENDPOINT="/"
+          else
+            HEALTH_ENDPOINT="/health"
+          fi
+
           # Try health check endpoint
           for i in {1..10}; do
-            if curl -f -s http://localhost:${PORT}/health > /dev/null 2>&1; then
-              echo "✅ Service $SERVICE_NAME is healthy (http://localhost:${PORT}/health)"
+            if curl -f -s http://localhost:${PORT}${HEALTH_ENDPOINT} > /dev/null 2>&1; then
+              echo "✅ Service $SERVICE_NAME is healthy (http://localhost:${PORT}${HEALTH_ENDPOINT})"
               exit 0
             fi
             echo "Attempt $i/10: Service not ready yet, waiting 5 seconds..."
