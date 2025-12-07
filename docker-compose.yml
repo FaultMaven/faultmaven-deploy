@@ -221,24 +221,22 @@ services:
       start_period: 30s
 
   # Dashboard - Knowledge Base Management UI
-  # TEMPORARILY DISABLED: Image not yet published to GHCR
-  # TODO: Build and publish faultmaven-dashboard image, then uncomment
-  # fm-dashboard:
-  #   image: ghcr.io/faultmaven/faultmaven-dashboard:latest
-  #   container_name: fm-dashboard
-  #   environment:
-  #     - VITE_API_URL=http://${SERVER_HOST}:8090
-  #   ports:
-  #     - "3000:80"
-  #   depends_on:
-  #     - fm-knowledge-service
-  #     - fm-auth-service
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:80/"]
-  #     interval: 30s
-  #     timeout: 5s
-  #     retries: 3
-  #     start_period: 40s
+  fm-dashboard:
+    image: ghcr.io/faultmaven/faultmaven-dashboard:latest
+    container_name: fm-dashboard
+    environment:
+      - VITE_API_URL=http://${SERVER_HOST}:8090
+    ports:
+      - "3000:80"
+    depends_on:
+      - fm-knowledge-service
+      - fm-auth-service
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
 
   # API Gateway - Single entry point for all client requests
   fm-api-gateway:
