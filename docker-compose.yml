@@ -203,7 +203,7 @@ services:
       start_period: 30s
 
   fm-job-worker-beat:
-    image: ghcr.io/faultmaven/fm-job-worker-beat:latest
+    image: ghcr.io/faultmaven/fm-job-worker:latest
     container_name: fm-job-worker-beat
     environment:
       - REDIS_HOST=redis
