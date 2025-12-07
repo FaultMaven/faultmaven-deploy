@@ -495,59 +495,41 @@ curl -X POST http://<SERVER_HOST>:8090/api/v1/agent/query \
 
 ## Security Architecture
 
-### Network-Based Security Model
+### Perimeter Security Model
 
-FaultMaven uses a **perimeter security model** where the API Gateway is the single point of authentication. Internal services trust the Docker/Kubernetes network boundary.
+FaultMaven uses a **perimeter security** model where the API Gateway handles all authentication and services trust validated headers.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    EXTERNAL BOUNDARY                        │
-│              (Authentication required here)                 │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-                              ▼
-                    ┌───────────────────┐
-                    │   API Gateway     │  ← User authentication (JWT)
-                    │   Port 8090       │  ← Rate limiting, CORS
-                    └─────────┬─────────┘
-                              │
-              Adds headers: X-User-ID, X-User-Email, X-User-Roles
-                              │
-┌─────────────────────────────┼───────────────────────────────┐
-│              TRUSTED INTERNAL NETWORK                       │
-│           (Docker bridge / Kubernetes pod network)          │
-│                             │                               │
-│    ┌────────┬───────┬───────┴────┬────────┬────────┐       │
-│    ▼        ▼       ▼            ▼        ▼        ▼       │
-│  Auth    Case    Knowledge    Evidence  Agent   Session    │
-│  8001    8003      8004         8005    8006     8002      │
-│                                                             │
-│  Services trust X-User-* headers from gateway              │
-│  No service-to-service authentication overhead             │
-└─────────────────────────────────────────────────────────────┘
-```
+**How It Works**:
 
-**Key Features**:
+1. **API Gateway** (Perimeter):
+   - Validates user JWT tokens
+   - **Strips any client-provided X-User-* headers** (prevents injection attacks)
+   - Adds validated X-User-* headers (X-User-ID, X-User-Email, X-User-Roles)
+   - Forwards requests to backend services
 
-- **Single Authentication Point**: API Gateway validates user JWTs
-- **Header-Based Context**: User identity flows via `X-User-ID`, `X-User-Email`, `X-User-Roles` headers
-- **Network Isolation**: Internal services only accessible within Docker/K8s network
-- **Infrastructure Security**: Redis and ChromaDB bound to localhost (not exposed externally)
+2. **Backend Services** (Trust Zone):
+   - Trust X-User-* headers from gateway without JWT validation
+   - Extract user context for business logic
+   - Call each other directly using same headers
+   - Not directly accessible from internet (network isolation)
 
-**Security Boundaries**:
+**Security Controls**:
 
-| Boundary | Protection |
-|----------|------------|
-| External → Gateway | JWT authentication, rate limiting |
-| Gateway → Services | Trusted headers, network isolation |
-| Host → Infrastructure | Redis/ChromaDB bound to 127.0.0.1 |
+- ✅ **Header Sanitization**: Gateway strips client X-User-* headers before processing
+- ✅ **JWT Validation**: Gateway validates user tokens (when AUTH_REQUIRED=true)
+- ✅ **Network Isolation**: Services run on private Docker/Kubernetes network
+- ✅ **User Isolation**: Database queries scoped to user_id from headers
+- ✅ **Simple Architecture**: Single authentication point (easier to audit)
 
-**Benefits**:
+**For Enterprise/Production**:
 
-- Simple architecture with single auth point
-- No token signing/verification overhead on internal calls
-- Easy debugging (one place to check auth issues)
-- Same security model as AWS VPC / GCP VPC
+If you need service-to-service security (zero-trust between services), use infrastructure tools:
+
+- **Istio or Linkerd**: mTLS between all services
+- **Kubernetes NetworkPolicy**: Restrict which pods can communicate
+- **Service Mesh**: Automatic certificate rotation and policy enforcement
+
+Do NOT implement service auth in application code - use infrastructure layer.
 
 ---
 
