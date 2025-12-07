@@ -698,7 +698,7 @@ faultmaven-workspace/
 
 This deployment uses microservices from:
 
-- [fm-core-lib](https://github.com/FaultMaven/fm-core-lib) - Shared models & LLM infrastructure
+- [fm-core-lib](https://github.com/FaultMaven/fm-core-lib) - Shared models, request context, & LLM infrastructure
 - [fm-auth-service](https://github.com/FaultMaven/fm-auth-service) - Authentication & user management
 - [fm-session-service](https://github.com/FaultMaven/fm-session-service) - Session management (Redis)
 - [fm-case-service](https://github.com/FaultMaven/fm-case-service) - Milestone-based case lifecycle

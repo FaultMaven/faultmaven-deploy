@@ -71,7 +71,7 @@ spec:
 | **chromadb** | 0.5 | 1.0GB | 512MB | Vector database |
 | **redis** | 0.25 | 512MB | 256MB | Session store |
 | fm-case-service | default | ~256MB | - | Lightweight FastAPI CRUD |
-| fm-auth-service | default | ~256MB | - | JWT authentication |
+| fm-auth-service | default | ~256MB | - | User authentication |
 | fm-session-service | default | ~256MB | - | Session management |
 | fm-evidence-service | default | ~256MB | - | File upload handling |
 | fm-job-worker | default | ~256MB | - | Celery background jobs |

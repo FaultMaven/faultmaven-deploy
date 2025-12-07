@@ -157,12 +157,11 @@ GitHub Actions: https://github.com/FaultMaven/fm-case-service/actions/runs/19995
 
 ### fm-case-service Repository
 - `Dockerfile` - Removed poetry.lock from COPY (allows fresh dependency resolution)
-- `pyproject.toml` - Added pyjwt>=2.8.0, cryptography>=41.0.0
 - `.github/workflows/ci.yml` - Fixed SHA tag extraction to use short SHA
 
 ### fm-core-lib Repository
-- `pyproject.toml` - Bumped version to 0.2.1
-- `src/fm_core_lib/auth/__init__.py` - Added docstring, fixed permissions
+- `pyproject.toml` - v0.3.0 (removed service-to-service JWT auth)
+- `src/fm_core_lib/auth/request_context.py` - Simplified header-based RequestContext
 
 ### faultmaven-deploy/.github Repository
 - `workflows/integration-test.yml` - Start only tested service (not full stack)
