@@ -36,7 +36,7 @@ services:
 
   # Core microservices
   fm-auth-service:
-    image: faultmaven/fm-auth-service:latest
+    image: ghcr.io/faultmaven/fm-auth-service:latest
     container_name: fm-auth-service
     ports:
       - "8001:8001"
@@ -63,7 +63,7 @@ services:
       start_period: 40s
 
   fm-session-service:
-    image: faultmaven/fm-session-service:latest
+    image: ghcr.io/faultmaven/fm-session-service:latest
     container_name: fm-session-service
     ports:
       - "8002:8000"
@@ -83,7 +83,7 @@ services:
       start_period: 40s
 
   fm-case-service:
-    image: faultmaven/fm-case-service:latest
+    image: ghcr.io/faultmaven/fm-case-service:latest
     container_name: fm-case-service
     ports:
       - "8003:8000"
@@ -106,7 +106,7 @@ services:
       start_period: 40s
 
   fm-knowledge-service:
-    image: faultmaven/fm-knowledge-service:latest
+    image: ghcr.io/faultmaven/fm-knowledge-service:latest
     container_name: fm-knowledge-service
     ports:
       - "8004:8000"
@@ -128,7 +128,7 @@ services:
       start_period: 40s
 
   fm-evidence-service:
-    image: faultmaven/fm-evidence-service:latest
+    image: ghcr.io/faultmaven/fm-evidence-service:latest
     container_name: fm-evidence-service
     ports:
       - "8005:8000"
@@ -148,7 +148,7 @@ services:
       start_period: 40s
 
   fm-agent-service:
-    image: faultmaven/fm-agent-service:latest
+    image: ghcr.io/faultmaven/fm-agent-service:latest
     container_name: fm-agent-service
     ports:
       - "8006:8000"
@@ -185,7 +185,7 @@ services:
 
   # Job processing
   fm-job-worker:
-    image: faultmaven/fm-job-worker:latest
+    image: ghcr.io/faultmaven/fm-job-worker:latest
     container_name: fm-job-worker
     environment:
       - REDIS_HOST=redis
@@ -203,7 +203,7 @@ services:
       start_period: 30s
 
   fm-job-worker-beat:
-    image: faultmaven/fm-job-worker-beat:latest
+    image: ghcr.io/faultmaven/fm-job-worker-beat:latest
     container_name: fm-job-worker-beat
     environment:
       - REDIS_HOST=redis
@@ -222,7 +222,7 @@ services:
 
   # Dashboard - Knowledge Base Management UI
   fm-dashboard:
-    image: faultmaven/faultmaven-dashboard:latest
+    image: ghcr.io/faultmaven/faultmaven-dashboard:latest
     container_name: fm-dashboard
     environment:
       - VITE_API_URL=http://${SERVER_HOST}:8090
@@ -240,7 +240,7 @@ services:
 
   # API Gateway - Single entry point for all client requests
   fm-api-gateway:
-    image: faultmaven/fm-api-gateway:latest
+    image: ghcr.io/faultmaven/fm-api-gateway:latest
     container_name: fm-api-gateway
     ports:
       - "8090:8090"

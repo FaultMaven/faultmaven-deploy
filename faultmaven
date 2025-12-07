@@ -274,10 +274,10 @@ cmd_start() {
     check_and_create_override
 
     echo ""
-    print_info "Starting Docker containers (this may take 5-10 minutes on first run)..."
+    print_info "Starting Docker containers (pulling from GitHub Container Registry)..."
     echo ""
 
-    if docker compose up -d --build; then
+    if docker compose up -d; then
         echo ""
         print_info "Waiting for services to become healthy (up to 120 seconds)..."
         echo ""
