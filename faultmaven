@@ -274,37 +274,8 @@ cmd_start() {
     check_and_create_override
 
     echo ""
-    print_info "Authenticating with GitHub Container Registry..."
-    echo ""
-
-    # Check if already logged in to GHCR
-    if ! docker pull ghcr.io/faultmaven/fm-case-service:latest --dry-run 2>/dev/null; then
-        print_info "Login required for GitHub Container Registry"
-        echo "Please authenticate with GitHub to pull images from GHCR"
-        echo ""
-
-        # Check if GITHUB_TOKEN is set in environment
-        if [ -n "$GITHUB_TOKEN" ]; then
-            echo "$GITHUB_TOKEN" | docker login ghcr.io -u $USER --password-stdin || {
-                print_error "Failed to authenticate with GHCR using GITHUB_TOKEN"
-                echo "Please run: export GITHUB_TOKEN=<your-token>"
-                exit 1
-            }
-        else
-            # Interactive login
-            echo "Option 1: Set GITHUB_TOKEN environment variable"
-            echo "  export GITHUB_TOKEN=<your-personal-access-token>"
-            echo ""
-            echo "Option 2: Run docker login manually"
-            echo "  docker login ghcr.io"
-            echo ""
-            print_error "GITHUB_TOKEN not found. Please authenticate with GHCR first."
-            exit 1
-        fi
-    fi
-
-    echo ""
-    print_info "Starting Docker containers (pulling from GitHub Container Registry)..."
+    print_info "Pulling pre-built images from GitHub Container Registry..."
+    print_info "(No authentication required - all images are public)"
     echo ""
 
     if docker compose up -d; then

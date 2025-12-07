@@ -238,7 +238,7 @@ The wrapper script will:
 4. ✅ Create resource limits file
 5. ✅ Build and start all services
 
-**First run takes 5-10 minutes** (downloads and builds Docker images).
+**First run takes 2-3 minutes** (downloads pre-built Docker images from GitHub Container Registry).
 
 ### Step 5: Access the Dashboard
 
