@@ -64,8 +64,9 @@ services:
   fm-job-worker-beat:
     build:
       context: ../fm-job-worker
-      dockerfile: Dockerfile.beat
+      dockerfile: Dockerfile
     image: null
+    # Uses same image as fm-job-worker but with different command (defined in base compose)
 
   fm-dashboard:
     build:
