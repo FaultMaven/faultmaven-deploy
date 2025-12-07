@@ -495,32 +495,41 @@ curl -X POST http://<SERVER_HOST>:8090/api/v1/agent/query \
 
 ## Security Architecture
 
-### Service-to-Service Authentication
+### Perimeter Security Model
 
-FaultMaven implements JWT-based service authentication for secure internal communication between microservices.
-
-**Key Features**:
-
-- **Service Identity**: Each microservice authenticates with a signed JWT token
-- **User Context Propagation**: Original user identity flows through the service chain
-- **Asymmetric Cryptography**: Auth service signs tokens with private key, services verify with public key
-- **Local Verification**: Services validate JWTs without calling auth service (zero network overhead)
-- **Granular Permissions**: Each service has specific allowed operations (e.g., `case:read`, `knowledge:search`)
+FaultMaven uses a **perimeter security** model where the API Gateway handles all authentication and services trust validated headers.
 
 **How It Works**:
 
-1. Services request JWT tokens from auth service on startup
-2. Internal API calls include `Authorization: Bearer <service-jwt>` header
-3. Target services verify JWT signature locally using public key
-4. Permission checks enforce access control based on service identity
-5. User context (`X-User-ID` header) flows through for audit/logging
+1. **API Gateway** (Perimeter):
+   - Validates user JWT tokens
+   - **Strips any client-provided X-User-* headers** (prevents injection attacks)
+   - Adds validated X-User-* headers (X-User-ID, X-User-Email, X-User-Roles)
+   - Forwards requests to backend services
 
-**Benefits**:
+2. **Backend Services** (Trust Zone):
+   - Trust X-User-* headers from gateway without JWT validation
+   - Extract user context for business logic
+   - Call each other directly using same headers
+   - Not directly accessible from internet (network isolation)
 
-- Zero-trust security model for internal APIs
-- Complete audit trail of which service performed each action
-- Protection against unauthorized service-to-service calls
-- Ready for service mesh integration (mTLS)
+**Security Controls**:
+
+- ✅ **Header Sanitization**: Gateway strips client X-User-* headers before processing
+- ✅ **JWT Validation**: Gateway validates user tokens (when AUTH_REQUIRED=true)
+- ✅ **Network Isolation**: Services run on private Docker/Kubernetes network
+- ✅ **User Isolation**: Database queries scoped to user_id from headers
+- ✅ **Simple Architecture**: Single authentication point (easier to audit)
+
+**For Enterprise/Production**:
+
+If you need service-to-service security (zero-trust between services), use infrastructure tools:
+
+- **Istio or Linkerd**: mTLS between all services
+- **Kubernetes NetworkPolicy**: Restrict which pods can communicate
+- **Service Mesh**: Automatic certificate rotation and policy enforcement
+
+Do NOT implement service auth in application code - use infrastructure layer.
 
 ---
 
