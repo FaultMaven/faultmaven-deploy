@@ -495,32 +495,59 @@ curl -X POST http://<SERVER_HOST>:8090/api/v1/agent/query \
 
 ## Security Architecture
 
-### Service-to-Service Authentication
+### Network-Based Security Model
 
-FaultMaven implements JWT-based service authentication for secure internal communication between microservices.
+FaultMaven uses a **perimeter security model** where the API Gateway is the single point of authentication. Internal services trust the Docker/Kubernetes network boundary.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    EXTERNAL BOUNDARY                        │
+│              (Authentication required here)                 │
+└─────────────────────────────┬───────────────────────────────┘
+                              │
+                              ▼
+                    ┌───────────────────┐
+                    │   API Gateway     │  ← User authentication (JWT)
+                    │   Port 8090       │  ← Rate limiting, CORS
+                    └─────────┬─────────┘
+                              │
+              Adds headers: X-User-ID, X-User-Email, X-User-Roles
+                              │
+┌─────────────────────────────┼───────────────────────────────┐
+│              TRUSTED INTERNAL NETWORK                       │
+│           (Docker bridge / Kubernetes pod network)          │
+│                             │                               │
+│    ┌────────┬───────┬───────┴────┬────────┬────────┐       │
+│    ▼        ▼       ▼            ▼        ▼        ▼       │
+│  Auth    Case    Knowledge    Evidence  Agent   Session    │
+│  8001    8003      8004         8005    8006     8002      │
+│                                                             │
+│  Services trust X-User-* headers from gateway              │
+│  No service-to-service authentication overhead             │
+└─────────────────────────────────────────────────────────────┘
+```
 
 **Key Features**:
 
-- **Service Identity**: Each microservice authenticates with a signed JWT token
-- **User Context Propagation**: Original user identity flows through the service chain
-- **Asymmetric Cryptography**: Auth service signs tokens with private key, services verify with public key
-- **Local Verification**: Services validate JWTs without calling auth service (zero network overhead)
-- **Granular Permissions**: Each service has specific allowed operations (e.g., `case:read`, `knowledge:search`)
+- **Single Authentication Point**: API Gateway validates user JWTs
+- **Header-Based Context**: User identity flows via `X-User-ID`, `X-User-Email`, `X-User-Roles` headers
+- **Network Isolation**: Internal services only accessible within Docker/K8s network
+- **Infrastructure Security**: Redis and ChromaDB bound to localhost (not exposed externally)
 
-**How It Works**:
+**Security Boundaries**:
 
-1. Services request JWT tokens from auth service on startup
-2. Internal API calls include `Authorization: Bearer <service-jwt>` header
-3. Target services verify JWT signature locally using public key
-4. Permission checks enforce access control based on service identity
-5. User context (`X-User-ID` header) flows through for audit/logging
+| Boundary | Protection |
+|----------|------------|
+| External → Gateway | JWT authentication, rate limiting |
+| Gateway → Services | Trusted headers, network isolation |
+| Host → Infrastructure | Redis/ChromaDB bound to 127.0.0.1 |
 
 **Benefits**:
 
-- Zero-trust security model for internal APIs
-- Complete audit trail of which service performed each action
-- Protection against unauthorized service-to-service calls
-- Ready for service mesh integration (mTLS)
+- Simple architecture with single auth point
+- No token signing/verification overhead on internal calls
+- Easy debugging (one place to check auth issues)
+- Same security model as AWS VPC / GCP VPC
 
 ---
 
@@ -689,7 +716,7 @@ faultmaven-workspace/
 
 This deployment uses microservices from:
 
-- [fm-core-lib](https://github.com/FaultMaven/fm-core-lib) - Shared models & LLM infrastructure
+- [fm-core-lib](https://github.com/FaultMaven/fm-core-lib) - Shared models, request context, & LLM infrastructure
 - [fm-auth-service](https://github.com/FaultMaven/fm-auth-service) - Authentication & user management
 - [fm-session-service](https://github.com/FaultMaven/fm-session-service) - Session management (Redis)
 - [fm-case-service](https://github.com/FaultMaven/fm-case-service) - Milestone-based case lifecycle
