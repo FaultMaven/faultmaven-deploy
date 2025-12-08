@@ -311,6 +311,40 @@ After installation, configure the extension to connect to your FaultMaven server
 
 ---
 
+## Deployment Neutrality
+
+**FaultMaven runs anywhere with zero code changes.**
+
+The platform uses **deployment neutrality patterns** to seamlessly scale from laptop development to Kubernetes production. Infrastructure choices are made at deployment time through environment variables—same Docker images, different environments.
+
+**Four Infrastructure Layers:**
+
+| Layer | Laptop/Dev | Production | Configuration |
+|-------|-----------|------------|---------------|
+| **Identity** (Redis) | Standalone | Sentinel (HA) | `REDIS_MODE=standalone\|sentinel` |
+| **Data** (Database) | SQLite | PostgreSQL | `DATABASE_URL=sqlite+aiosqlite://...\|postgresql+asyncpg://...` |
+| **Files** (Storage) | Local filesystem | AWS S3 | `STORAGE_PROVIDER=local\|s3` |
+| **Vector** (Knowledge) | ChromaDB (~100K docs) | Pinecone (billions) | `VECTOR_DB_PROVIDER=chroma\|pinecone` |
+
+**Service Discovery:**
+
+| Deployment | URL Pattern | Example |
+|------------|-------------|---------|
+| **Docker** | `http://fm-{service}-service:{port}` | `http://fm-auth-service:8000` |
+| **Kubernetes** | `http://fm-{service}-service.{ns}.svc.cluster.local:{port}` | `http://fm-auth-service.faultmaven.svc.cluster.local:8000` |
+| **Local** | `http://localhost:{port}` | `http://localhost:8000` |
+
+Set `DEPLOYMENT_MODE=docker|kubernetes|local` to automatically resolve service URLs.
+
+**Gateway Protection:**
+
+- **Rate Limiting:** 60 req/min per IP (Redis-backed, distributed)
+- **Circuit Breakers:** Auto-detect failing services, fast-fail after 5 consecutive errors
+
+**📖 Complete Guide:** See [DEPLOYMENT_NEUTRALITY.md](DEPLOYMENT_NEUTRALITY.md) for provider patterns, configuration migration, and implementation details.
+
+---
+
 ## Architecture
 
 ```mermaid
@@ -715,6 +749,7 @@ This deployment uses microservices from:
 ## Documentation
 
 - **[QUICKSTART.md](QUICKSTART.md)** - Detailed setup and usage guide
+- **[DEPLOYMENT_NEUTRALITY.md](DEPLOYMENT_NEUTRALITY.md)** - Zero-code deployment from laptop to Kubernetes
 - **[Architecture Overview](https://github.com/FaultMaven/faultmaven/blob/main/docs/ARCHITECTURE.md)** - System design
 - **[Deployment Guide](https://github.com/FaultMaven/faultmaven/blob/main/docs/DEPLOYMENT.md)** - Advanced deployment options and configurations
 - **[API Reference](https://github.com/FaultMaven/faultmaven/blob/main/docs/API.md)** - Complete endpoint documentation
