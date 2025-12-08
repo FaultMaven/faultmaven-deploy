@@ -21,14 +21,14 @@
 services:
   fm-auth-service:
     build:
-      context: ../fm-auth-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: fm-auth-service/Dockerfile
     image: null  # Don't use Docker Hub image
 
   fm-session-service:
     build:
-      context: ../fm-session-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: fm-session-service/Dockerfile
     image: null
 
   fm-case-service:
