@@ -341,7 +341,7 @@ Set `DEPLOYMENT_MODE=docker|kubernetes|local` to automatically resolve service U
 - **Rate Limiting:** 60 req/min per IP (Redis-backed, distributed)
 - **Circuit Breakers:** Auto-detect failing services, fast-fail after 5 consecutive errors
 
-**📖 Complete Guide:** See [DEPLOYMENT_NEUTRALITY.md](DEPLOYMENT_NEUTRALITY.md) for provider patterns, configuration migration, and implementation details.
+**📖 Complete Guide:** See [Deployment Neutrality Architecture](https://github.com/FaultMaven/faultmaven-doc-internal/blob/main/architecture/deployment-neutrality.md) for provider patterns, configuration migration, and implementation details.
 
 ---
 
@@ -749,8 +749,8 @@ This deployment uses microservices from:
 ## Documentation
 
 - **[QUICKSTART.md](QUICKSTART.md)** - Detailed setup and usage guide
-- **[DEPLOYMENT_NEUTRALITY.md](DEPLOYMENT_NEUTRALITY.md)** - Zero-code deployment from laptop to Kubernetes
 - **[Architecture Overview](https://github.com/FaultMaven/faultmaven/blob/main/docs/ARCHITECTURE.md)** - System design
+- **[Deployment Neutrality](https://github.com/FaultMaven/faultmaven-doc-internal/blob/main/architecture/deployment-neutrality.md)** - Zero-code deployment from laptop to Kubernetes (internal docs)
 - **[Deployment Guide](https://github.com/FaultMaven/faultmaven/blob/main/docs/DEPLOYMENT.md)** - Advanced deployment options and configurations
 - **[API Reference](https://github.com/FaultMaven/faultmaven/blob/main/docs/API.md)** - Complete endpoint documentation
 
