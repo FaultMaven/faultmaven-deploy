@@ -13,11 +13,17 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
 MIN_RAM_GB=8
 REQUIRED_COMMANDS=("docker" "jq" "curl")
+
+# Development mode detection
+DEV_MODE=false
+USE_PROD_IMAGES=false
+COMPOSE_FILES="-f docker-compose.yml"
 
 # Health check endpoints: "port:service_name"
 # Used by cmd_status() and cmd_verify() for consistency
@@ -53,6 +59,9 @@ print_header() {
     echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
     echo -e "${BLUE}║${NC}  FaultMaven Self-Hosted Manager      ${BLUE}║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
+    if [ "$DEV_MODE" = true ]; then
+        echo -e "${CYAN}🔧 Development Mode: Building from local source${NC}"
+    fi
     echo ""
 }
 
@@ -70,6 +79,56 @@ print_warning() {
 
 print_info() {
     echo -e "${BLUE}ℹ${NC} $1"
+}
+
+print_dev() {
+    echo -e "${CYAN}🔧${NC} $1"
+}
+
+#######################################
+# Development Mode Detection
+#######################################
+
+detect_dev_mode() {
+    # Allow override to force production images (from command-line flag)
+    if [ "${USE_PROD_IMAGES}" = "true" ]; then
+        DEV_MODE=false
+        COMPOSE_FILES="-f docker-compose.yml"
+        print_info "Using production images from ghcr.io (--use-prod-images flag)"
+        return
+    fi
+
+    # Check if docker-compose.dev.yml exists
+    if [ ! -f docker-compose.dev.yml ]; then
+        DEV_MODE=false
+        return
+    fi
+
+    # Check if we're in a development workspace (sibling repos exist)
+    local parent_dir="$(dirname "$SCRIPT_DIR")"
+    local has_repos=false
+
+    # Check for at least 3 service repositories
+    local repo_count=0
+    for repo in fm-auth-service fm-session-service fm-case-service fm-knowledge-service fm-core-lib; do
+        if [ -d "$parent_dir/$repo" ]; then
+            repo_count=$((repo_count + 1))
+        fi
+    done
+
+    if [ $repo_count -ge 3 ]; then
+        has_repos=true
+    fi
+
+    # Enable dev mode if docker-compose.dev.yml exists AND repos are present
+    if [ "$has_repos" = true ]; then
+        DEV_MODE=true
+        COMPOSE_FILES="-f docker-compose.yml -f docker-compose.dev.yml"
+    else
+        DEV_MODE=false
+        print_warning "docker-compose.dev.yml found but service repositories not detected"
+        print_info "Using production images from ghcr.io"
+    fi
 }
 
 #######################################
@@ -278,6 +337,62 @@ EOF
 # Core Commands
 #######################################
 
+cmd_build() {
+    print_header
+
+    if [ "$DEV_MODE" != true ]; then
+        print_error "Build command only available in development mode"
+        echo ""
+        echo "Development mode requires:"
+        echo "  1. docker-compose.dev.yml file in this directory"
+        echo "  2. At least 3 service repositories in parent directory"
+        echo "     (fm-auth-service, fm-session-service, fm-case-service, etc.)"
+        echo ""
+        echo "Current setup: Production mode (using pre-built images from GHCR)"
+        echo ""
+        echo "To force production images even with local repos:"
+        echo "  ./faultmaven start --use-prod-images"
+        exit 1
+    fi
+
+    local service="$1"
+
+    if [ -z "$service" ]; then
+        # Build all services
+        print_dev "Building all FaultMaven services from local source..."
+        echo ""
+
+        if docker compose $COMPOSE_FILES build; then
+            echo ""
+            print_success "All services built successfully"
+            echo ""
+            echo "Next steps:"
+            echo "  ./faultmaven start    # Start with newly built images"
+        else
+            echo ""
+            print_error "Build failed"
+            exit 1
+        fi
+    else
+        # Build specific service
+        print_dev "Building $service from local source..."
+        echo ""
+
+        if docker compose $COMPOSE_FILES build "$service"; then
+            echo ""
+            print_success "$service built successfully"
+            echo ""
+            echo "Next steps:"
+            echo "  ./faultmaven start    # Start services (including rebuilt $service)"
+            echo "  docker compose $COMPOSE_FILES restart $service  # Just restart this service"
+        else
+            echo ""
+            print_error "Build failed for $service"
+            exit 1
+        fi
+    fi
+}
+
 cmd_start() {
     print_header
     echo "Starting FaultMaven services..."
@@ -290,11 +405,16 @@ cmd_start() {
     check_and_create_override
 
     echo ""
-    print_info "Pulling pre-built images from GitHub Container Registry..."
-    print_info "(No authentication required - all images are public)"
+    if [ "$DEV_MODE" = true ]; then
+        print_dev "Development mode: Building services from local source..."
+        print_dev "This may take several minutes on first build..."
+    else
+        print_info "Pulling pre-built images from GitHub Container Registry..."
+        print_info "(No authentication required - all images are public)"
+    fi
     echo ""
 
-    if docker compose up -d; then
+    if docker compose $COMPOSE_FILES up -d; then
         echo ""
         print_info "Waiting for services to become healthy (up to 120 seconds)..."
         echo ""
@@ -337,10 +457,15 @@ cmd_start() {
             echo "Next steps:"
             echo "  1. Check status:  ./faultmaven status"
             echo "  2. View logs:     ./faultmaven logs"
-            echo "  3. Access services:"
+            echo "  3. Run tests:     ./faultmaven verify"
+            echo "  4. Access services:"
             echo "     - API Gateway: http://$SERVER_HOST:8090/docs"
             echo "     - Dashboard:   http://$SERVER_HOST:3000"
             echo ""
+            if [ "$DEV_MODE" = true ]; then
+                print_dev "Development mode active - changes to code will require rebuild"
+                echo ""
+            fi
         else
             echo ""
             print_warning "Services started but some are still initializing"
@@ -362,7 +487,7 @@ cmd_stop() {
     echo "Stopping FaultMaven services..."
     echo ""
 
-    if docker compose down; then
+    if docker compose $COMPOSE_FILES down; then
         print_success "Services stopped"
         echo ""
         print_info "Data preserved in ./data directory"
@@ -480,7 +605,7 @@ cmd_prune() {
         # Remove FaultMaven images
         print_info "Removing FaultMaven images..."
         docker images --filter "reference=faultmaven-deploy-*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
-        docker images --filter "reference=faultmaven/*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
+        docker images --filter "reference=ghcr.io/faultmaven/*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
 
         # Remove dangling images
         print_info "Removing dangling images..."
@@ -533,6 +658,7 @@ cmd_nuke() {
         # Remove all FaultMaven images
         print_info "Removing all FaultMaven images..."
         docker images --filter "reference=faultmaven*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
+        docker images --filter "reference=ghcr.io/faultmaven/*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
 
         # Remove data directory
         if [ -d ./data ]; then
@@ -557,7 +683,11 @@ cmd_nuke() {
         docker system df
         echo ""
         print_warning "You'll need to rebuild everything with './faultmaven start'"
-        print_warning "First build will take 10-15 minutes (no cache)"
+        if [ "$DEV_MODE" = true ]; then
+            print_warning "First build will take 10-15 minutes (building from source)"
+        else
+            print_warning "First start will take 2-3 minutes (pulling images)"
+        fi
     else
         print_info "Nuke cancelled - phew!"
     fi
@@ -627,7 +757,7 @@ cmd_verify() {
         -d '{
             "title": "Verification Test Case",
             "description": "Automated test to verify FaultMaven installation",
-            "user_id": "test_user_001"
+            "user_id": "verify_test_user"
         }' 2>/dev/null)
 
     if [ -z "$case_response" ]; then
@@ -784,32 +914,43 @@ cmd_clean() {
 
 cmd_help() {
     print_header
-    echo "Usage: ./faultmaven [command]"
+    echo "Usage: ./faultmaven [command] [options]"
     echo ""
     echo "Service Management:"
-    echo "  start     Start all FaultMaven services (with pre-flight checks)"
-    echo "  stop      Stop all services (preserves data and images)"
-    echo "  status    Show service status and health checks"
-    echo "  verify    Run end-to-end verification tests"
-    echo "  logs      Stream logs from all services"
-    echo "  logs <service>  Stream logs from specific service"
+    echo "  start [--use-prod-images]  Start all FaultMaven services"
+    echo "  stop                        Stop all services (preserves data and images)"
+    echo "  status                      Show service status and health checks"
+    echo "  verify                      Run end-to-end verification tests"
+    echo "  logs [service]              Stream logs from all or specific service"
+    echo ""
+    echo "Development Commands:"
+    echo "  build [service]             Build services from local source (dev mode only)"
+    echo "                              Omit [service] to build all services"
     echo ""
     echo "Cleanup Commands (in order of severity):"
-    echo "  clean     Delete data only (preserves Docker images for fast restart)"
-    echo "  kill      Force-kill all containers (preserves data and images)"
-    echo "  prune     Remove containers + images + build cache (preserves data)"
-    echo "  nuke      ☢️  NUCLEAR: Delete everything including system-wide Docker cache"
+    echo "  clean                       Delete data only (preserves Docker images)"
+    echo "  kill                        Force-kill all containers (preserves data)"
+    echo "  prune                       Remove containers + images + build cache"
+    echo "  nuke                        ☢️  NUCLEAR: Delete everything"
     echo ""
-    echo "Other:"
-    echo "  help      Show this help message"
+    echo "Options:"
+    echo "  --use-prod-images           Force use of production images from GHCR"
+    echo "                              even when in development workspace"
     echo ""
     echo "Examples:"
-    echo "  ./faultmaven start           # Start with pre-flight checks"
-    echo "  ./faultmaven status          # Check health of all services"
-    echo "  ./faultmaven verify          # Run automated verification tests"
+    echo "  ./faultmaven start                  # Start (auto-detect dev/prod mode)"
+    echo "  ./faultmaven start --use-prod-images  # Force production images"
+    echo "  ./faultmaven build fm-agent-service # Build single service (dev mode)"
+    echo "  ./faultmaven build                  # Build all services (dev mode)"
+    echo "  ./faultmaven status                 # Check health of all services"
+    echo "  ./faultmaven verify                 # Run automated tests"
     echo "  ./faultmaven logs fm-agent-service  # View agent service logs"
-    echo "  ./faultmaven kill            # Emergency shutdown"
-    echo "  ./faultmaven prune           # Free up disk space"
+    echo ""
+    echo "Development Mode:"
+    echo "  Automatically enabled when:"
+    echo "    - docker-compose.dev.yml exists in this directory"
+    echo "    - At least 3 service repos found in parent directory"
+    echo "  Builds services from local source instead of pulling from GHCR"
     echo ""
     echo "Cleanup Decision Guide:"
     echo "  - Misbehaving service?       → ./faultmaven kill"
@@ -823,7 +964,27 @@ cmd_help() {
 # Main
 #######################################
 
+# Parse flags before command
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --use-prod-images)
+            USE_PROD_IMAGES=true
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+# Detect development mode (respects --use-prod-images flag)
+detect_dev_mode
+
+# Execute command
 case "${1:-}" in
+    build)
+        cmd_build "$2"
+        ;;
     start)
         cmd_start
         ;;
