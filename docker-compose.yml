@@ -47,7 +47,7 @@ services:
     environment:
       - PROFILE=public
       - DB_TYPE=sqlite
-      - DATABASE_URL=sqlite+aiosqlite:////data/faultmaven.db
+      - DATABASE_URL=sqlite+aiosqlite:////data/auth-service.db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       # Simple auth for self-hosted
@@ -94,7 +94,7 @@ services:
     environment:
       - PROFILE=public
       - DB_TYPE=sqlite
-      - DATABASE_URL=sqlite+aiosqlite:////data/faultmaven.db
+      - DATABASE_URL=sqlite+aiosqlite:////data/case-service.db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     volumes:
@@ -117,7 +117,7 @@ services:
     environment:
       - PROFILE=public
       - DB_TYPE=sqlite
-      - DATABASE_URL=sqlite+aiosqlite:////data/faultmaven.db
+      - DATABASE_URL=sqlite+aiosqlite:////data/knowledge-service.db
       - CHROMADB_HOST=chromadb
       - CHROMADB_PORT=8000
     volumes:
@@ -139,7 +139,7 @@ services:
     environment:
       - PROFILE=public
       - DB_TYPE=sqlite
-      - DATABASE_URL=sqlite+aiosqlite:////data/faultmaven.db
+      - DATABASE_URL=sqlite+aiosqlite:////data/evidence-service.db
       - STORAGE_TYPE=local
       - LOCAL_UPLOAD_DIR=/data/uploads
     volumes:
