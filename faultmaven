@@ -964,15 +964,24 @@ cmd_help() {
 # Main
 #######################################
 
-# Parse flags before command
-while [[ $# -gt 0 ]]; do
-    case $1 in
+# Parse flags and extract command + args
+COMMAND=""
+ARGS=()
+for arg in "$@"; do
+    case $arg in
         --use-prod-images)
             USE_PROD_IMAGES=true
-            shift
+            ;;
+        -*)
+            # Unknown flag, ignore for now
             ;;
         *)
-            break
+            # Non-flag arguments
+            if [ -z "$COMMAND" ]; then
+                COMMAND="$arg"
+            else
+                ARGS+=("$arg")
+            fi
             ;;
     esac
 done
@@ -981,9 +990,9 @@ done
 detect_dev_mode
 
 # Execute command
-case "${1:-}" in
+case "${COMMAND:-}" in
     build)
-        cmd_build "$2"
+        cmd_build "${ARGS[0]:-}"
         ;;
     start)
         cmd_start
@@ -998,7 +1007,7 @@ case "${1:-}" in
         cmd_verify
         ;;
     logs)
-        cmd_logs "$2"
+        cmd_logs "${ARGS[0]:-}"
         ;;
     kill)
         cmd_kill
@@ -1016,7 +1025,7 @@ case "${1:-}" in
         cmd_help
         ;;
     *)
-        print_error "Unknown command: $1"
+        print_error "Unknown command: ${COMMAND}"
         echo ""
         cmd_help
         exit 1
