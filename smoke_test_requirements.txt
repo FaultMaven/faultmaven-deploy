@@ -1,0 +1,5 @@
+# Requirements for smoke_test.py
+# Install with: pip install -r smoke_test_requirements.txt
+
+httpx>=0.25.0
+rich>=13.0.0

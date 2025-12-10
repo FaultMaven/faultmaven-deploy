@@ -1,0 +1,231 @@
+name: Deployment Neutrality Test
+
+# This workflow validates that FaultMaven works correctly across
+# all deployment configurations (Phase 3.2: CI/CD Neutrality Matrix)
+#
+# Test Matrix:
+# - SQLite + Local Storage + ChromaDB (Development mode)
+# - PostgreSQL + S3 + Pinecone (Production mode)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'fm-*-service/**'
+      - 'docker-compose.yml'
+      - 'docker-compose.dev.yml'
+      - '.env.example'
+      - 'smoke_test.sh'
+      - 'smoke_test.py'
+      - '.github/workflows/deployment-neutrality.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  # Matrix job: Test both SQLite/Local and Postgres/S3 configurations
+  neutrality-test:
+    name: Test ${{ matrix.config.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false  # Test both configurations even if one fails
+      matrix:
+        config:
+          - name: "SQLite + Local Storage"
+            database: sqlite
+            storage: local
+            vectordb: chroma
+            env_overrides: |
+              DATABASE_URL=sqlite:///./data/faultmaven.db
+              STORAGE_PROVIDER=local
+              VECTOR_DB_PROVIDER=chroma
+
+          - name: "PostgreSQL + S3 + Pinecone"
+            database: postgres
+            storage: s3
+            vectordb: pinecone
+            env_overrides: |
+              DATABASE_URL=postgresql://faultmaven:password@localhost:5432/faultmaven
+              STORAGE_PROVIDER=s3
+              VECTOR_DB_PROVIDER=pinecone
+              AWS_ACCESS_KEY_ID=test
+              AWS_SECRET_ACCESS_KEY=test
+              AWS_REGION=us-east-1
+              S3_BUCKET=faultmaven-test
+              PINECONE_API_KEY=test-key
+              PINECONE_ENVIRONMENT=test-env
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Set up Python for smoke test
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install smoke test dependencies
+        run: |
+          pip install -r smoke_test_requirements.txt
+
+      - name: Create .env file for ${{ matrix.config.name }}
+        run: |
+          cat > .env << 'ENV_EOF'
+          # Base configuration
+          SERVER_HOST=localhost
+          DASHBOARD_USERNAME=admin
+          DASHBOARD_PASSWORD=changeme123
+
+          # Placeholder API keys (tests use mock LLM responses)
+          OPENAI_API_KEY=sk-test-placeholder
+          ANTHROPIC_API_KEY=sk-ant-test-placeholder
+          GROQ_API_KEY=gsk-test-placeholder
+
+          # Matrix-specific overrides for ${{ matrix.config.name }}
+          ${{ matrix.config.env_overrides }}
+          ENV_EOF
+
+          echo "✅ Created .env for ${{ matrix.config.name }}"
+          echo "Contents (masked secrets):"
+          cat .env | grep -v "API_KEY\|SECRET" || true
+
+      - name: Start PostgreSQL (if needed)
+        if: matrix.config.database == 'postgres'
+        run: |
+          docker run -d \
+            --name postgres \
+            -e POSTGRES_USER=faultmaven \
+            -e POSTGRES_PASSWORD=password \
+            -e POSTGRES_DB=faultmaven \
+            -p 5432:5432 \
+            postgres:16-alpine
+
+          echo "Waiting for PostgreSQL to be ready..."
+          for i in {1..30}; do
+            if docker exec postgres pg_isready -U faultmaven > /dev/null 2>&1; then
+              echo "✅ PostgreSQL is ready"
+              break
+            fi
+            echo "Attempt $i/30: Waiting for PostgreSQL..."
+            sleep 1
+          done
+
+      - name: Start MinIO (mock S3) if needed
+        if: matrix.config.storage == 's3'
+        run: |
+          docker run -d \
+            --name minio \
+            -p 9000:9000 \
+            -p 9001:9001 \
+            -e MINIO_ROOT_USER=test \
+            -e MINIO_ROOT_PASSWORD=test12345 \
+            minio/minio server /data --console-address ":9001"
+
+          echo "Waiting for MinIO to be ready..."
+          sleep 5
+
+          # Create bucket
+          docker exec minio mc alias set local http://localhost:9000 test test12345
+          docker exec minio mc mb local/faultmaven-test || true
+          echo "✅ MinIO (mock S3) is ready with bucket 'faultmaven-test'"
+
+      - name: Make faultmaven CLI executable
+        run: chmod +x ./faultmaven
+
+      - name: Start FaultMaven stack (production images)
+        run: |
+          echo "Starting FaultMaven with --use-prod-images for ${{ matrix.config.name }}..."
+          ./faultmaven start --use-prod-images
+
+      - name: Wait for services to stabilize
+        run: |
+          echo "Waiting 45 seconds for all services to fully initialize..."
+          sleep 45
+
+      - name: Check Gateway health
+        run: |
+          echo "Checking Gateway health endpoint..."
+          for i in {1..10}; do
+            if curl -f -s http://localhost:8090/health > /dev/null 2>&1; then
+              echo "✅ Gateway is responding"
+              curl -s http://localhost:8090/health | jq .
+              break
+            fi
+            echo "Attempt $i/10: Gateway not ready yet, waiting 5 seconds..."
+            sleep 5
+          done
+
+      - name: Run smoke test (Python version)
+        id: smoke_test
+        run: |
+          echo "🚀 Running E2E smoke test for ${{ matrix.config.name }}..."
+          python smoke_test.py http://localhost:8090 || {
+            echo "❌ Smoke test failed for ${{ matrix.config.name }}"
+            exit 1
+          }
+
+      - name: Verify deployment neutrality
+        if: success()
+        run: |
+          echo "✅ Deployment neutrality verified for ${{ matrix.config.name }}"
+          echo ""
+          echo "Configuration tested:"
+          echo "- Database: ${{ matrix.config.database }}"
+          echo "- Storage: ${{ matrix.config.storage }}"
+          echo "- Vector DB: ${{ matrix.config.vectordb }}"
+          echo ""
+          echo "All smoke tests passed - deployment neutrality maintained!"
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "❌ Test failed for ${{ matrix.config.name }}"
+          echo ""
+          echo "Collecting service logs for diagnosis..."
+          echo "=========================================="
+          echo ""
+          ./faultmaven logs fm-api-gateway | tail -100
+          echo ""
+          echo "Docker Compose status:"
+          docker compose ps
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "Stopping services..."
+          ./faultmaven stop || true
+          docker stop postgres minio || true
+          docker rm postgres minio || true
+
+  # Summary job that requires all matrix tests to pass
+  neutrality-summary:
+    name: Deployment Neutrality Summary
+    runs-on: ubuntu-latest
+    needs: neutrality-test
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.neutrality-test.result }}" = "success" ]; then
+            echo "✅ All deployment neutrality tests passed!"
+            echo ""
+            echo "Verified configurations:"
+            echo "- SQLite + Local Storage + ChromaDB"
+            echo "- PostgreSQL + S3 + Pinecone"
+            echo ""
+            echo "FaultMaven maintains deployment neutrality across all infrastructure providers."
+            exit 0
+          else
+            echo "❌ Some deployment neutrality tests failed"
+            echo ""
+            echo "Deployment neutrality may be compromised."
+            echo "Review the failed jobs for details."
+            exit 1
+          fi
