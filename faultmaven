@@ -104,30 +104,55 @@ detect_dev_mode() {
         return
     fi
 
-    # Check if we're in a development workspace (sibling repos exist)
+    # Check if we're in a development workspace (ALL required repos must be present)
     local parent_dir="$(dirname "$SCRIPT_DIR")"
-    local has_repos=false
 
-    # Check for at least 3 service repositories
-    local repo_count=0
-    for repo in fm-auth-service fm-session-service fm-case-service fm-knowledge-service fm-core-lib; do
-        if [ -d "$parent_dir/$repo" ]; then
-            repo_count=$((repo_count + 1))
+    # Required repositories for development mode (based on docker-compose.dev.yml)
+    local required_repos=(
+        "fm-core-lib"
+        "fm-auth-service"
+        "fm-session-service"
+        "fm-case-service"
+        "fm-knowledge-service"
+        "fm-evidence-service"
+        "fm-agent-service"
+        "fm-api-gateway"
+        "fm-job-worker"
+        "faultmaven-dashboard"
+    )
+
+    local missing_repos=()
+    for repo in "${required_repos[@]}"; do
+        if [ ! -d "$parent_dir/$repo" ]; then
+            missing_repos+=("$repo")
         fi
     done
 
-    if [ $repo_count -ge 3 ]; then
-        has_repos=true
-    fi
-
-    # Enable dev mode if docker-compose.dev.yml exists AND repos are present
-    if [ "$has_repos" = true ]; then
+    # Enable dev mode ONLY if ALL required repos are present
+    if [ ${#missing_repos[@]} -eq 0 ]; then
         DEV_MODE=true
         COMPOSE_FILES="-f docker-compose.yml -f docker-compose.dev.yml"
     else
         DEV_MODE=false
-        print_warning "docker-compose.dev.yml found but service repositories not detected"
-        print_info "Using production images from ghcr.io"
+        echo ""
+        print_warning "Development mode requires ALL service repositories"
+        echo ""
+        echo "Missing repositories (${#missing_repos[@]} of ${#required_repos[@]}):"
+        for repo in "${missing_repos[@]}"; do
+            echo "  ✗ $repo"
+        done
+        echo ""
+        echo "You have two options:"
+        echo ""
+        echo "  Option 1: Clone missing repositories"
+        echo "    Clone all missing repos as siblings to faultmaven-deploy/"
+        echo "    Then run this command again"
+        echo ""
+        echo "  Option 2: Use production images (recommended for most users)"
+        echo "    Run: ./faultmaven start --use-prod-images"
+        echo "    This pulls pre-built images from ghcr.io (faster, no build needed)"
+        echo ""
+        exit 1
     fi
 }
 
