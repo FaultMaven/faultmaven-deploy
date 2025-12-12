@@ -11,9 +11,11 @@
 git clone https://github.com/FaultMaven/faultmaven-deploy.git
 cd faultmaven-deploy
 
-# 2. Secure: Add your API key
+# 2. Configure: Set required values
 cp .env.example .env
-# Edit .env and add: OPENAI_API_KEY=sk-...
+# Edit .env and set:
+#   SERVER_HOST=192.168.x.x   # Your server's IP (required!)
+#   OPENAI_API_KEY=sk-...     # Or another LLM provider key
 
 # 3. Protect: Resource limits (auto-created)
 # The ./faultmaven script will create docker-compose.override.yml
@@ -31,6 +33,13 @@ That's it! FaultMaven is now running on your laptop.
 ### Required
 
 - **Docker** & **Docker Compose** installed ([Get Docker](https://docs.docker.com/get-docker/))
+- **jq** & **curl** (for CLI health checks)
+  ```bash
+  # Ubuntu/Debian
+  sudo apt install jq curl
+  # macOS (via Homebrew)
+  brew install jq curl
+  ```
 - **8GB RAM** minimum (16GB recommended for local LLM)
 - **LLM Provider** - Choose one option:
 
@@ -289,11 +298,15 @@ The wrapper script simplifies all operations:
 # Check service status and health
 ./faultmaven status
 
+# Restart all services or a specific one
+./faultmaven restart
+./faultmaven restart fm-agent-service
+
 # View logs from all services
 ./faultmaven logs
 
-# View logs from specific service
-./faultmaven logs fm-agent-service
+# View logs from specific service (last 50 lines)
+./faultmaven logs fm-agent-service --tail 50
 
 # Stop all services (preserves data)
 ./faultmaven stop
@@ -301,8 +314,12 @@ The wrapper script simplifies all operations:
 # DANGER: Delete all data and reset
 ./faultmaven clean
 
-# Show help
+# Show version and help
+./faultmaven version
 ./faultmaven help
+
+# Disable colors (useful for CI/scripts)
+./faultmaven --no-color status
 ```
 
 ---
