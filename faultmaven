@@ -17,6 +17,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
+CLI_VERSION="1.0.0"
 MIN_RAM_GB=8
 REQUIRED_COMMANDS=("docker" "jq" "curl")
 
@@ -28,6 +29,18 @@ COMPOSE_FILES="-f docker-compose.yml"
 # CLI options
 NO_COLOR=false
 TAIL_LINES=""
+YES_FLAG=false
+INTERACTIVE=true
+
+# Detect non-interactive mode (no tty)
+if [ ! -t 0 ]; then
+    INTERACTIVE=false
+fi
+
+# Docker compose wrapper - ensures $COMPOSE_FILES is always used
+dc() {
+    docker compose $COMPOSE_FILES "$@"
+}
 
 # Health check endpoints: "port:service_name"
 # Used by cmd_status() and cmd_verify() for consistency
@@ -87,6 +100,38 @@ print_info() {
 
 print_dev() {
     echo -e "${CYAN}🔧${NC} $1"
+}
+
+# Prompt helper for interactive/non-interactive mode
+# Usage: confirm_prompt "Continue?" "y" -> returns 0 if yes, 1 if no
+# In non-interactive mode without --yes, defaults to safe (no) for destructive ops
+confirm_prompt() {
+    local prompt="$1"
+    local default="${2:-n}"  # Default to 'no' for safety
+
+    if [ "$YES_FLAG" = true ]; then
+        return 0
+    fi
+
+    if [ "$INTERACTIVE" = false ]; then
+        if [ "$default" = "y" ]; then
+            return 0
+        else
+            echo "Non-interactive mode: use --yes to confirm destructive operations"
+            return 1
+        fi
+    fi
+
+    read -p "$prompt " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        return 0
+    elif [[ $REPLY =~ ^[Nn]$ ]]; then
+        return 1
+    else
+        # Empty or other: use default
+        [ "$default" = "y" ] && return 0 || return 1
+    fi
 }
 
 #######################################
@@ -153,10 +198,12 @@ check_dependencies() {
     print_info "Checking dependencies..."
 
     local all_present=true
+    local missing_cmds=()
 
     for cmd in "${REQUIRED_COMMANDS[@]}"; do
         if ! command -v "$cmd" &> /dev/null; then
             print_error "$cmd is not installed"
+            missing_cmds+=("$cmd")
             all_present=false
         else
             print_success "$cmd found"
@@ -165,8 +212,22 @@ check_dependencies() {
 
     if [ "$all_present" = false ]; then
         echo ""
-        print_error "Missing required dependencies. Please install Docker and Docker Compose."
-        echo "Visit: https://docs.docker.com/get-docker/"
+        print_error "Missing required dependencies: ${missing_cmds[*]}"
+        echo ""
+        echo "Install instructions:"
+        for cmd in "${missing_cmds[@]}"; do
+            case "$cmd" in
+                docker)
+                    echo "  docker: https://docs.docker.com/get-docker/"
+                    ;;
+                jq|curl)
+                    echo "  $cmd:   sudo apt install $cmd  (Debian/Ubuntu)"
+                    echo "         brew install $cmd      (macOS)"
+                    ;;
+            esac
+        done
+        echo ""
+        echo "See QUICKSTART.md for detailed setup instructions."
         exit 1
     fi
 }
@@ -202,9 +263,7 @@ check_resources() {
         print_warning "Only ${available_ram}GB RAM available (${MIN_RAM_GB}GB minimum recommended)"
         print_warning "FaultMaven may run slowly or fail to start"
         echo ""
-        read -p "Continue anyway? (y/N) " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        if ! confirm_prompt "Continue anyway? (y/N)"; then
             print_info "Startup cancelled"
             exit 1
         fi
@@ -306,9 +365,7 @@ check_and_create_override() {
     if [ ! -f docker-compose.override.yml ]; then
         print_warning "docker-compose.override.yml not found (recommended for resource limits)"
         echo ""
-        read -p "Create it now? (Y/n) " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        if confirm_prompt "Create it now? (Y/n)" "y"; then
             print_info "Creating docker-compose.override.yml with resource limits..."
             cat > docker-compose.override.yml << 'EOF'
 # Docker Compose Override - Resource Limits
@@ -384,7 +441,7 @@ cmd_build() {
         print_dev "Building all FaultMaven services from local source..."
         echo ""
 
-        if docker compose $COMPOSE_FILES build; then
+        if dc build; then
             echo ""
             print_success "All services built successfully"
             echo ""
@@ -400,13 +457,13 @@ cmd_build() {
         print_dev "Building $service from local source..."
         echo ""
 
-        if docker compose $COMPOSE_FILES build "$service"; then
+        if dc build "$service"; then
             echo ""
             print_success "$service built successfully"
             echo ""
             echo "Next steps:"
             echo "  ./faultmaven start    # Start services (including rebuilt $service)"
-            echo "  docker compose $COMPOSE_FILES restart $service  # Just restart this service"
+            echo "  ./faultmaven restart $service  # Just restart this service"
         else
             echo ""
             print_error "Build failed for $service"
@@ -437,7 +494,7 @@ cmd_start() {
     fi
     echo ""
 
-    if docker compose $COMPOSE_FILES up -d; then
+    if dc up -d; then
         echo ""
         print_info "Waiting for services to become healthy (up to 120 seconds)..."
         echo ""
@@ -454,12 +511,12 @@ cmd_start() {
         while [ $elapsed -lt $max_wait ]; do
             # Check if all services with health checks are healthy
             # Count services that are NOT healthy (either unhealthy or starting)
-            # Note: docker compose ps --format json outputs NDJSON (one JSON object per line)
+            # Note: dc ps --format json outputs NDJSON (one JSON object per line)
             # We use jq -s to slurp all objects into an array, then filter
-            not_healthy=$(docker compose ps --format json 2>/dev/null | jq -s '[.[] | select(.Health != null and .Health != "healthy")] | length' 2>/dev/null || echo "0")
+            not_healthy=$(dc ps --format json 2>/dev/null | jq -s '[.[] | select(.Health != null and .Health != "healthy")] | length' 2>/dev/null || echo "0")
 
             # Also verify at least some services are running
-            total_services=$(docker compose ps --format json 2>/dev/null | jq -s 'length' 2>/dev/null || echo "0")
+            total_services=$(dc ps --format json 2>/dev/null | jq -s 'length' 2>/dev/null || echo "0")
 
             if [ "$not_healthy" -eq 0 ] && [ "$total_services" -gt 0 ]; then
                 all_healthy=true
@@ -512,7 +569,7 @@ cmd_stop() {
     echo "Stopping FaultMaven services..."
     echo ""
 
-    if docker compose $COMPOSE_FILES down; then
+    if dc down; then
         print_success "Services stopped"
         echo ""
         print_info "Data preserved in ./data directory"
@@ -528,7 +585,7 @@ cmd_status() {
     echo "Service Status:"
     echo ""
 
-    docker compose ps
+    dc ps
 
     echo ""
     echo "Health Checks:"
@@ -575,7 +632,7 @@ cmd_logs() {
             echo "Streaming logs from all services (Ctrl+C to exit)..."
         fi
         echo ""
-        docker compose logs -f $tail_opt
+        dc logs -f $tail_opt
     else
         if [ -n "$TAIL_LINES" ]; then
             echo "Showing last $TAIL_LINES lines from $1 (Ctrl+C to exit)..."
@@ -583,7 +640,7 @@ cmd_logs() {
             echo "Streaming logs from $1 (Ctrl+C to exit)..."
         fi
         echo ""
-        docker compose logs -f $tail_opt "$1"
+        dc logs -f $tail_opt "$1"
     fi
 }
 
@@ -612,7 +669,7 @@ cmd_kill() {
     fi
 
     # Also try compose down just to be sure
-    docker compose down 2>/dev/null || true
+    dc down 2>/dev/null || true
 
     echo ""
     print_info "Data preserved in ./data directory"
@@ -630,46 +687,45 @@ cmd_prune() {
     echo ""
     echo "Data in ./data directory will be preserved"
     echo ""
-    read -p "Continue? (y/N) " -n 1 -r
+
+    if ! confirm_prompt "Continue? (y/N)"; then
+        print_info "Prune cancelled"
+        return
+    fi
+
     echo ""
 
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo ""
+    # Stop and remove all containers
+    print_info "Removing containers..."
+    dc down --remove-orphans 2>/dev/null || true
 
-        # Stop and remove all containers
-        print_info "Removing containers..."
-        docker compose down --remove-orphans 2>/dev/null || true
+    # Remove FaultMaven images
+    print_info "Removing FaultMaven images..."
+    docker images --filter "reference=faultmaven-deploy-*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
+    docker images --filter "reference=ghcr.io/faultmaven/*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
 
-        # Remove FaultMaven images
-        print_info "Removing FaultMaven images..."
-        docker images --filter "reference=faultmaven-deploy-*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
-        docker images --filter "reference=ghcr.io/faultmaven/*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
+    # Remove dangling images
+    print_info "Removing dangling images..."
+    docker image prune -f 2>/dev/null || true
 
-        # Remove dangling images
-        print_info "Removing dangling images..."
-        docker image prune -f 2>/dev/null || true
+    # Remove unused networks
+    print_info "Removing unused networks..."
+    docker network prune -f 2>/dev/null || true
 
-        # Remove unused networks
-        print_info "Removing unused networks..."
-        docker network prune -f 2>/dev/null || true
+    # Remove build cache
+    print_info "Removing build cache..."
+    docker builder prune -f 2>/dev/null || true
 
-        # Remove build cache
-        print_info "Removing build cache..."
-        docker builder prune -f 2>/dev/null || true
+    print_success "Docker cleanup complete"
+    echo ""
 
-        print_success "Docker cleanup complete"
-        echo ""
+    # Show space reclaimed
+    print_info "Checking disk space..."
+    docker system df
 
-        # Show space reclaimed
-        print_info "Checking disk space..."
-        docker system df
-
-        echo ""
-        print_info "Data preserved in ./data directory"
-        print_info "Run './faultmaven start' to rebuild and restart"
-    else
-        print_info "Prune cancelled"
-    fi
+    echo ""
+    print_info "Data preserved in ./data directory"
+    print_info "Run './faultmaven start' to rebuild and restart"
 }
 
 cmd_nuke() {
@@ -683,51 +739,60 @@ cmd_nuke() {
     echo ""
     print_error "This is destructive and affects your entire Docker installation!"
     echo ""
-    read -p "Are you ABSOLUTELY sure? Type 'NUKE' to confirm: " confirm
 
-    if [ "$confirm" = "NUKE" ]; then
-        echo ""
-
-        # Kill all FaultMaven containers
-        print_info "Killing all FaultMaven containers..."
-        docker compose down -v --remove-orphans 2>/dev/null || true
-        docker ps -a --filter "name=faultmaven" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
-
-        # Remove all FaultMaven images
-        print_info "Removing all FaultMaven images..."
-        docker images --filter "reference=faultmaven*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
-        docker images --filter "reference=ghcr.io/faultmaven/*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
-
-        # Remove data directory
-        if [ -d ./data ]; then
-            print_info "Removing data directory..."
-            rm -rf ./data
-        fi
-
-        # Remove override file
-        if [ -f docker-compose.override.yml ]; then
-            print_info "Removing docker-compose.override.yml..."
-            rm -f docker-compose.override.yml
-            print_info "Override file removed - next start will recreate it"
-        fi
-
-        # System-wide Docker cleanup (AGGRESSIVE)
-        print_warning "Running system-wide Docker cleanup..."
-        docker system prune -a -f --volumes 2>/dev/null || true
-
-        print_success "Nuclear cleanup complete - FaultMaven obliterated"
-        echo ""
-        print_info "Disk space reclaimed:"
-        docker system df
-        echo ""
-        print_warning "You'll need to rebuild everything with './faultmaven start'"
-        if [ "$DEV_MODE" = true ]; then
-            print_warning "First build will take 10-15 minutes (building from source)"
-        else
-            print_warning "First start will take 2-3 minutes (pulling images)"
-        fi
+    # For nuke, require explicit confirmation even with --yes
+    if [ "$YES_FLAG" = true ]; then
+        print_warning "Proceeding with --yes flag..."
+    elif [ "$INTERACTIVE" = false ]; then
+        echo "Non-interactive mode: use --yes to confirm destructive operations"
+        exit 1
     else
-        print_info "Nuke cancelled - phew!"
+        read -p "Are you ABSOLUTELY sure? Type 'NUKE' to confirm: " confirm
+        if [ "$confirm" != "NUKE" ]; then
+            print_info "Nuke cancelled - phew!"
+            return
+        fi
+    fi
+
+    echo ""
+
+    # Kill all FaultMaven containers
+    print_info "Killing all FaultMaven containers..."
+    dc down -v --remove-orphans 2>/dev/null || true
+    docker ps -a --filter "name=faultmaven" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+
+    # Remove all FaultMaven images
+    print_info "Removing all FaultMaven images..."
+    docker images --filter "reference=faultmaven*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
+    docker images --filter "reference=ghcr.io/faultmaven/*" --format "{{.ID}}" | xargs -r docker rmi -f 2>/dev/null || true
+
+    # Remove data directory
+    if [ -d ./data ]; then
+        print_info "Removing data directory..."
+        rm -rf ./data
+    fi
+
+    # Remove override file
+    if [ -f docker-compose.override.yml ]; then
+        print_info "Removing docker-compose.override.yml..."
+        rm -f docker-compose.override.yml
+        print_info "Override file removed - next start will recreate it"
+    fi
+
+    # System-wide Docker cleanup (AGGRESSIVE)
+    print_warning "Running system-wide Docker cleanup..."
+    docker system prune -a -f --volumes 2>/dev/null || true
+
+    print_success "Nuclear cleanup complete - FaultMaven obliterated"
+    echo ""
+    print_info "Disk space reclaimed:"
+    docker system df
+    echo ""
+    print_warning "You'll need to rebuild everything with './faultmaven start'"
+    if [ "$DEV_MODE" = true ]; then
+        print_warning "First build will take 10-15 minutes (building from source)"
+    else
+        print_warning "First start will take 2-3 minutes (pulling images)"
     fi
 }
 
@@ -927,7 +992,7 @@ cmd_restart() {
         echo "Restarting all FaultMaven services..."
         echo ""
 
-        if docker compose $COMPOSE_FILES restart; then
+        if dc restart; then
             print_success "All services restarted"
             echo ""
             print_info "Run './faultmaven status' to verify health"
@@ -939,7 +1004,7 @@ cmd_restart() {
         echo "Restarting $service..."
         echo ""
 
-        if docker compose $COMPOSE_FILES restart "$service"; then
+        if dc restart "$service"; then
             print_success "$service restarted"
             echo ""
             print_info "Run './faultmaven status' to verify health"
@@ -960,29 +1025,37 @@ cmd_clean() {
     echo ""
     echo "Docker images and containers will be preserved (use 'prune' to remove)"
     echo ""
-    read -p "Are you sure? Type 'DELETE' to confirm: " confirm
 
-    if [ "$confirm" = "DELETE" ]; then
-        echo ""
-        print_info "Stopping services..."
-        docker compose down -v
-
-        if [ -d ./data ]; then
-            print_info "Removing data directory..."
-            rm -rf ./data
-        fi
-
-        print_success "FaultMaven data has been deleted"
-        echo ""
-        print_info "Docker images preserved - restart will be fast"
-        print_info "Run './faultmaven start' to start fresh"
+    # Require explicit confirmation
+    if [ "$YES_FLAG" = true ]; then
+        print_warning "Proceeding with --yes flag..."
+    elif [ "$INTERACTIVE" = false ]; then
+        echo "Non-interactive mode: use --yes to confirm destructive operations"
+        exit 1
     else
-        print_info "Clean cancelled"
+        read -p "Are you sure? Type 'DELETE' to confirm: " confirm
+        if [ "$confirm" != "DELETE" ]; then
+            print_info "Clean cancelled"
+            return
+        fi
     fi
+
+    echo ""
+    print_info "Stopping services..."
+    dc down -v
+
+    if [ -d ./data ]; then
+        print_info "Removing data directory..."
+        rm -rf ./data
+    fi
+
+    print_success "FaultMaven data has been deleted"
+    echo ""
+    print_info "Docker images preserved - restart will be fast"
+    print_info "Run './faultmaven start' to start fresh"
 }
 
 cmd_version() {
-    local version="1.0.0"
     local git_hash=""
     local git_date=""
 
@@ -992,7 +1065,7 @@ cmd_version() {
         git_date=$(git log -1 --format="%ci" 2>/dev/null | cut -d' ' -f1 || echo "unknown")
     fi
 
-    echo "FaultMaven CLI v${version}"
+    echo "FaultMaven CLI v${CLI_VERSION}"
     if [ -n "$git_hash" ] && [ "$git_hash" != "unknown" ]; then
         echo "Commit: ${git_hash} (${git_date})"
     fi
@@ -1029,7 +1102,8 @@ cmd_help() {
     echo "Options:"
     echo "  --use-prod-images           Force use of production images from GHCR"
     echo "  --no-color                  Disable colored output (useful for CI/logs)"
-    echo "  --tail N                    Limit log output to last N lines (with logs command)"
+    echo "  --yes, -y                   Auto-confirm destructive operations (for scripts)"
+    echo "  --tail N                    Limit log output to last N lines (logs command only)"
     echo ""
     echo "Examples:"
     echo "  ./faultmaven start                    # Start (auto-detect dev/prod mode)"
@@ -1088,6 +1162,9 @@ for ((i=1; i<=$#; i++)); do
             CYAN=''
             NC=''
             ;;
+        --yes|-y)
+            YES_FLAG=true
+            ;;
         --tail)
             if [ -n "$next_arg" ] && [[ "$next_arg" =~ ^[0-9]+$ ]]; then
                 TAIL_LINES="$next_arg"
@@ -1126,6 +1203,11 @@ done
 
 # Detect development mode (respects --use-prod-images flag)
 detect_dev_mode
+
+# Warn if --tail is used with non-logs command
+if [ -n "$TAIL_LINES" ] && [ "$COMMAND" != "logs" ]; then
+    print_warning "--tail is only used with the 'logs' command (ignored)"
+fi
 
 # Execute command
 case "${COMMAND:-}" in
