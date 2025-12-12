@@ -93,12 +93,14 @@ print_dev() {
 # Development Mode Detection
 #######################################
 
+# Store missing repos for helpful error messages in cmd_build
+MISSING_REPOS=()
+
 detect_dev_mode() {
     # Allow override to force production images (from command-line flag)
     if [ "${USE_PROD_IMAGES}" = "true" ]; then
         DEV_MODE=false
         COMPOSE_FILES="-f docker-compose.yml"
-        print_info "Using production images from ghcr.io (--use-prod-images flag)"
         return
     fi
 
@@ -125,38 +127,21 @@ detect_dev_mode() {
         "faultmaven-dashboard"
     )
 
-    local missing_repos=()
+    MISSING_REPOS=()
     for repo in "${required_repos[@]}"; do
         if [ ! -d "$parent_dir/$repo" ]; then
-            missing_repos+=("$repo")
+            MISSING_REPOS+=("$repo")
         fi
     done
 
     # Enable dev mode ONLY if ALL required repos are present
-    if [ ${#missing_repos[@]} -eq 0 ]; then
+    if [ ${#MISSING_REPOS[@]} -eq 0 ]; then
         DEV_MODE=true
         COMPOSE_FILES="-f docker-compose.yml -f docker-compose.dev.yml"
     else
+        # Fall back to production mode silently - build command will show details if needed
         DEV_MODE=false
-        echo ""
-        print_warning "Development mode requires ALL service repositories"
-        echo ""
-        echo "Missing repositories (${#missing_repos[@]} of ${#required_repos[@]}):"
-        for repo in "${missing_repos[@]}"; do
-            echo "  ✗ $repo"
-        done
-        echo ""
-        echo "You have two options:"
-        echo ""
-        echo "  Option 1: Clone missing repositories"
-        echo "    Clone all missing repos as siblings to faultmaven-deploy/"
-        echo "    Then run this command again"
-        echo ""
-        echo "  Option 2: Use production images (recommended for most users)"
-        echo "    Run: ./faultmaven start --use-prod-images"
-        echo "    This pulls pre-built images from ghcr.io (faster, no build needed)"
-        echo ""
-        exit 1
+        COMPOSE_FILES="-f docker-compose.yml"
     fi
 }
 
@@ -370,17 +355,25 @@ cmd_build() {
     print_header
 
     if [ "$DEV_MODE" != true ]; then
-        print_error "Build command only available in development mode"
+        print_error "Build command requires development mode"
         echo ""
-        echo "Development mode requires:"
-        echo "  1. docker-compose.dev.yml file in this directory"
-        echo "  2. At least 3 service repositories in parent directory"
-        echo "     (fm-auth-service, fm-session-service, fm-case-service, etc.)"
+        if [ ${#MISSING_REPOS[@]} -gt 0 ]; then
+            echo "Missing repositories (${#MISSING_REPOS[@]} of 10):"
+            for repo in "${MISSING_REPOS[@]}"; do
+                echo "  ✗ $repo"
+            done
+            echo ""
+            echo "To enable development mode, clone all repositories as siblings:"
+            echo "  cd $(dirname "$SCRIPT_DIR")"
+            echo "  for repo in ${MISSING_REPOS[*]}; do"
+            echo "    git clone https://github.com/FaultMaven/\$repo.git"
+            echo "  done"
+        else
+            echo "Development mode requires docker-compose.dev.yml in this directory."
+        fi
         echo ""
-        echo "Current setup: Production mode (using pre-built images from GHCR)"
-        echo ""
-        echo "To force production images even with local repos:"
-        echo "  ./faultmaven start --use-prod-images"
+        echo "Most users should use pre-built images instead:"
+        echo "  ./faultmaven start    # Pulls images from ghcr.io"
         exit 1
     fi
 
@@ -1048,17 +1041,12 @@ cmd_help() {
     echo "  ./faultmaven logs --tail 100          # View last 100 lines from all services"
     echo "  ./faultmaven --no-color status        # Status without colors (for CI)"
     echo ""
-    echo "Development Mode:"
-    echo "  Automatically enabled when ALL 10 required repositories are present:"
-    echo "    fm-core-lib, fm-auth-service, fm-session-service, fm-case-service,"
-    echo "    fm-knowledge-service, fm-evidence-service, fm-agent-service,"
-    echo "    fm-api-gateway, fm-job-worker, faultmaven-dashboard"
+    echo "Development Mode (for contributors):"
+    echo "  Automatically enabled when ALL 10 service repositories are cloned"
+    echo "  as siblings to faultmaven-deploy/. Otherwise uses production images."
     echo ""
-    echo "  If ANY repositories are missing:"
-    echo "    - Script exits with error showing which repos are missing"
-    echo "    - Two options: clone missing repos OR use --use-prod-images"
-    echo ""
-    echo "  When enabled, builds services from local source instead of pulling from GHCR"
+    echo "  The 'build' command requires dev mode and will show missing repos."
+    echo "  All other commands work in both modes."
     echo ""
     echo "Cleanup Decision Guide:"
     echo "  - Misbehaving service?       → ./faultmaven kill"
