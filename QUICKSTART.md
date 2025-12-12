@@ -11,9 +11,11 @@
 git clone https://github.com/FaultMaven/faultmaven-deploy.git
 cd faultmaven-deploy
 
-# 2. Secure: Add your API key
+# 2. Configure: Set required values
 cp .env.example .env
-# Edit .env and add: OPENAI_API_KEY=sk-...
+# Edit .env and set:
+#   SERVER_HOST=192.168.x.x   # Your server's IP (required!)
+#   OPENAI_API_KEY=sk-...     # Or another LLM provider key
 
 # 3. Protect: Resource limits (auto-created)
 # The ./faultmaven script will create docker-compose.override.yml
@@ -31,6 +33,13 @@ That's it! FaultMaven is now running on your laptop.
 ### Required
 
 - **Docker** & **Docker Compose** installed ([Get Docker](https://docs.docker.com/get-docker/))
+- **jq** & **curl** (for CLI health checks)
+  ```bash
+  # Ubuntu/Debian
+  sudo apt install jq curl
+  # macOS (via Homebrew)
+  brew install jq curl
+  ```
 - **8GB RAM** minimum (16GB recommended for local LLM)
 - **LLM Provider** - Choose one option:
 

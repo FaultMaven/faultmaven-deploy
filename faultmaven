@@ -1076,7 +1076,7 @@ cmd_help() {
 COMMAND=""
 ARGS=()
 SKIP_NEXT=false
-for i in $(seq 1 $#); do
+for ((i=1; i<=$#; i++)); do
     if [ "$SKIP_NEXT" = true ]; then
         SKIP_NEXT=false
         continue
