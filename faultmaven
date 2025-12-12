@@ -103,11 +103,12 @@ print_dev() {
 }
 
 # Prompt helper for interactive/non-interactive mode
-# Usage: confirm_prompt "Continue?" "y" -> returns 0 if yes, 1 if no
+# Usage: confirm_prompt "Continue?" "y" "command_name" -> returns 0 if yes, 1 if no
 # In non-interactive mode without --yes, defaults to safe (no) for destructive ops
 confirm_prompt() {
     local prompt="$1"
     local default="${2:-n}"  # Default to 'no' for safety
+    local context="${3:-}"   # Optional: command name for better error messages
 
     if [ "$YES_FLAG" = true ]; then
         return 0
@@ -117,7 +118,11 @@ confirm_prompt() {
         if [ "$default" = "y" ]; then
             return 0
         else
-            echo "Non-interactive mode: use --yes to confirm destructive operations"
+            if [ -n "$context" ]; then
+                echo "Non-interactive mode: '$context' requires --yes to confirm"
+            else
+                echo "Non-interactive mode: use --yes to confirm destructive operations"
+            fi
             return 1
         fi
     fi
@@ -218,11 +223,15 @@ check_dependencies() {
         for cmd in "${missing_cmds[@]}"; do
             case "$cmd" in
                 docker)
-                    echo "  docker: https://docs.docker.com/get-docker/"
+                    echo "  docker:  https://docs.docker.com/get-docker/"
                     ;;
-                jq|curl)
-                    echo "  $cmd:   sudo apt install $cmd  (Debian/Ubuntu)"
-                    echo "         brew install $cmd      (macOS)"
+                jq)
+                    echo "  jq:      sudo apt install jq   (Debian/Ubuntu)"
+                    echo "           brew install jq       (macOS)"
+                    ;;
+                curl)
+                    echo "  curl:    sudo apt install curl (Debian/Ubuntu)"
+                    echo "           brew install curl     (macOS)"
                     ;;
             esac
         done
@@ -688,7 +697,7 @@ cmd_prune() {
     echo "Data in ./data directory will be preserved"
     echo ""
 
-    if ! confirm_prompt "Continue? (y/N)"; then
+    if ! confirm_prompt "Continue? (y/N)" "n" "prune"; then
         print_info "Prune cancelled"
         return
     fi
@@ -744,7 +753,7 @@ cmd_nuke() {
     if [ "$YES_FLAG" = true ]; then
         print_warning "Proceeding with --yes flag..."
     elif [ "$INTERACTIVE" = false ]; then
-        echo "Non-interactive mode: use --yes to confirm destructive operations"
+        echo "Non-interactive mode: 'nuke' requires --yes to confirm"
         exit 1
     else
         read -p "Are you ABSOLUTELY sure? Type 'NUKE' to confirm: " confirm
@@ -1030,7 +1039,7 @@ cmd_clean() {
     if [ "$YES_FLAG" = true ]; then
         print_warning "Proceeding with --yes flag..."
     elif [ "$INTERACTIVE" = false ]; then
-        echo "Non-interactive mode: use --yes to confirm destructive operations"
+        echo "Non-interactive mode: 'clean' requires --yes to confirm"
         exit 1
     else
         read -p "Are you sure? Type 'DELETE' to confirm: " confirm
