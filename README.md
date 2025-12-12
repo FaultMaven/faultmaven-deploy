@@ -67,9 +67,13 @@ cd faultmaven-deploy
 
 # 2. Configure: Add your settings
 cp .env.example .env
-# Edit .env and add:
-#   - LLM API key (any provider: OPENAI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, etc.)
-#   - SERVER_HOST (your server IP, e.g., 192.168.0.200)
+# Edit .env and set TWO REQUIRED values:
+#
+#   SERVER_HOST=192.168.x.x      # ⚠️ REQUIRED: Your server's IP address
+#   OPENAI_API_KEY=sk-...        # ⚠️ REQUIRED: At least one LLM API key
+#
+# TIP: Find your IP with: hostname -I | awk '{print $1}'  (Linux)
+#                     or: ipconfig getifaddr en0          (macOS)
 
 # 3. Protect: Resource limits (auto-created by wrapper)
 # The ./faultmaven script handles this automatically
@@ -116,6 +120,14 @@ Next steps:
 **Required:**
 
 - **Docker** & **Docker Compose** ([Get Docker](https://docs.docker.com/get-docker/))
+- **jq** & **curl** (for CLI health checks)
+  ```bash
+  # Ubuntu/Debian
+  sudo apt install jq curl
+  # macOS (via Homebrew)
+  brew install jq curl
+  # Most systems have curl pre-installed
+  ```
 - **8GB RAM** minimum (16GB recommended)
   - Default resource limits assume 8GB system RAM
   - Allocates ~5GB total: Agent (1.5GB), Knowledge (2GB), ChromaDB (1GB), Redis (512MB)
@@ -155,14 +167,13 @@ Self-hosted FaultMaven uses **one LLM for all operations** - chat, analysis, and
 
 **What runs locally:**
 
-- ✅ 10 Docker containers: 6 microservices + API Gateway + Dashboard + 2 job workers
-  - **Microservices**: auth, session, case, knowledge, evidence, agent
-  - **API Gateway**: Single entry point for all requests
-  - **Dashboard**: Web UI for Global KB management
-  - **Job Workers**: Celery worker + Celery Beat scheduler
-- ✅ ChromaDB vector database
-- ✅ Redis session store
-- ✅ SQLite data storage
+- ✅ 12 Docker containers total:
+  - **6 Microservices**: auth, session, case, knowledge, evidence, agent
+  - **2 Infrastructure**: Redis (session store) + ChromaDB (vector database)
+  - **2 Job Workers**: Celery worker + Celery Beat scheduler
+  - **1 API Gateway**: Single entry point for all requests
+  - **1 Dashboard**: Web UI for Global KB management
+- ✅ SQLite data storage (zero configuration)
 
 ---
 
@@ -177,11 +188,15 @@ The `./faultmaven` script simplifies deployment with pre-flight checks and resou
 # Check service status and health
 ./faultmaven status
 
+# Restart all services or a specific one
+./faultmaven restart
+./faultmaven restart fm-agent-service
+
 # View logs (all services)
 ./faultmaven logs
 
-# View logs (specific service)
-./faultmaven logs fm-agent-service
+# View logs (specific service, last 100 lines)
+./faultmaven logs fm-agent-service --tail 100
 
 # Stop services (preserves data)
 ./faultmaven stop
@@ -189,10 +204,11 @@ The `./faultmaven` script simplifies deployment with pre-flight checks and resou
 # Reset to factory defaults (DANGER: deletes all data)
 ./faultmaven clean
 
-# Optional: Run end-to-end verification tests (troubleshooting only)
+# Run end-to-end verification tests
 ./faultmaven verify
 
-# Show help
+# Show version and help
+./faultmaven version
 ./faultmaven help
 ```
 

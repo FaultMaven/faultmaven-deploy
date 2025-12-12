@@ -289,11 +289,15 @@ The wrapper script simplifies all operations:
 # Check service status and health
 ./faultmaven status
 
+# Restart all services or a specific one
+./faultmaven restart
+./faultmaven restart fm-agent-service
+
 # View logs from all services
 ./faultmaven logs
 
-# View logs from specific service
-./faultmaven logs fm-agent-service
+# View logs from specific service (last 50 lines)
+./faultmaven logs fm-agent-service --tail 50
 
 # Stop all services (preserves data)
 ./faultmaven stop
@@ -301,8 +305,12 @@ The wrapper script simplifies all operations:
 # DANGER: Delete all data and reset
 ./faultmaven clean
 
-# Show help
+# Show version and help
+./faultmaven version
 ./faultmaven help
+
+# Disable colors (useful for CI/scripts)
+./faultmaven --no-color status
 ```
 
 ---

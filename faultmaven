@@ -25,6 +25,10 @@ DEV_MODE=false
 USE_PROD_IMAGES=false
 COMPOSE_FILES="-f docker-compose.yml"
 
+# CLI options
+NO_COLOR=false
+TAIL_LINES=""
+
 # Health check endpoints: "port:service_name"
 # Used by cmd_status() and cmd_verify() for consistency
 HEALTH_CHECK_SERVICES=(
@@ -420,6 +424,7 @@ cmd_build() {
 
 cmd_start() {
     print_header
+    local start_time=$(date +%s)
     echo "Starting FaultMaven services..."
     echo ""
 
@@ -476,8 +481,10 @@ cmd_start() {
         echo ""
 
         if [ "$all_healthy" = true ]; then
+            local end_time=$(date +%s)
+            local duration=$((end_time - start_time))
             echo ""
-            print_success "FaultMaven services started successfully!"
+            print_success "FaultMaven services started successfully! (${duration}s)"
             echo ""
             echo "Next steps:"
             echo "  1. Check status:  ./faultmaven status"
@@ -563,14 +570,27 @@ cmd_status() {
 cmd_logs() {
     print_header
 
+    local tail_opt=""
+    if [ -n "$TAIL_LINES" ]; then
+        tail_opt="--tail $TAIL_LINES"
+    fi
+
     if [ -z "$1" ]; then
-        echo "Streaming logs from all services (Ctrl+C to exit)..."
+        if [ -n "$TAIL_LINES" ]; then
+            echo "Showing last $TAIL_LINES lines from all services (Ctrl+C to exit)..."
+        else
+            echo "Streaming logs from all services (Ctrl+C to exit)..."
+        fi
         echo ""
-        docker compose logs -f
+        docker compose logs -f $tail_opt
     else
-        echo "Streaming logs from $1 (Ctrl+C to exit)..."
+        if [ -n "$TAIL_LINES" ]; then
+            echo "Showing last $TAIL_LINES lines from $1 (Ctrl+C to exit)..."
+        else
+            echo "Streaming logs from $1 (Ctrl+C to exit)..."
+        fi
         echo ""
-        docker compose logs -f "$1"
+        docker compose logs -f $tail_opt "$1"
     fi
 }
 
@@ -906,6 +926,37 @@ EOF
     fi
 }
 
+cmd_restart() {
+    print_header
+    local service="$1"
+
+    if [ -z "$service" ]; then
+        echo "Restarting all FaultMaven services..."
+        echo ""
+
+        if docker compose $COMPOSE_FILES restart; then
+            print_success "All services restarted"
+            echo ""
+            print_info "Run './faultmaven status' to verify health"
+        else
+            print_error "Failed to restart services"
+            exit 1
+        fi
+    else
+        echo "Restarting $service..."
+        echo ""
+
+        if docker compose $COMPOSE_FILES restart "$service"; then
+            print_success "$service restarted"
+            echo ""
+            print_info "Run './faultmaven status' to verify health"
+        else
+            print_error "Failed to restart $service"
+            exit 1
+        fi
+    fi
+}
+
 cmd_clean() {
     print_header
     print_warning "This will PERMANENTLY DELETE all data including:"
@@ -937,16 +988,36 @@ cmd_clean() {
     fi
 }
 
+cmd_version() {
+    local version="1.0.0"
+    local git_hash=""
+    local git_date=""
+
+    # Try to get git info if available
+    if command -v git &> /dev/null && [ -d .git ]; then
+        git_hash=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+        git_date=$(git log -1 --format="%ci" 2>/dev/null | cut -d' ' -f1 || echo "unknown")
+    fi
+
+    echo "FaultMaven CLI v${version}"
+    if [ -n "$git_hash" ] && [ "$git_hash" != "unknown" ]; then
+        echo "Commit: ${git_hash} (${git_date})"
+    fi
+    echo ""
+    echo "Repository: https://github.com/FaultMaven/faultmaven-deploy"
+}
+
 cmd_help() {
     print_header
     echo "Usage: ./faultmaven [command] [options]"
     echo ""
     echo "Service Management:"
-    echo "  start [--use-prod-images]  Start all FaultMaven services"
+    echo "  start [--use-prod-images]   Start all FaultMaven services"
     echo "  stop                        Stop all services (preserves data and images)"
+    echo "  restart [service]           Restart all or specific service"
     echo "  status                      Show service status and health checks"
     echo "  verify                      Run end-to-end verification tests"
-    echo "  logs [service]              Stream logs from all or specific service"
+    echo "  logs [service] [--tail N]   Stream logs (optionally limit to last N lines)"
     echo ""
     echo "Development Commands:"
     echo "  build [service]             Build services from local source (dev mode only)"
@@ -958,18 +1029,24 @@ cmd_help() {
     echo "  prune                       Remove containers + images + build cache"
     echo "  nuke                        ☢️  NUCLEAR: Delete everything"
     echo ""
+    echo "Information:"
+    echo "  version                     Show CLI version and git commit"
+    echo "  help                        Show this help message"
+    echo ""
     echo "Options:"
     echo "  --use-prod-images           Force use of production images from GHCR"
-    echo "                              Bypasses all repository checks"
+    echo "  --no-color                  Disable colored output (useful for CI/logs)"
+    echo "  --tail N                    Limit log output to last N lines (with logs command)"
     echo ""
     echo "Examples:"
-    echo "  ./faultmaven start                  # Start (auto-detect dev/prod mode)"
+    echo "  ./faultmaven start                    # Start (auto-detect dev/prod mode)"
     echo "  ./faultmaven start --use-prod-images  # Force production images"
-    echo "  ./faultmaven build fm-agent-service # Build single service (dev mode)"
-    echo "  ./faultmaven build                  # Build all services (dev mode)"
-    echo "  ./faultmaven status                 # Check health of all services"
-    echo "  ./faultmaven verify                 # Run automated tests"
-    echo "  ./faultmaven logs fm-agent-service  # View agent service logs"
+    echo "  ./faultmaven restart fm-agent-service # Restart specific service"
+    echo "  ./faultmaven build fm-agent-service   # Build single service (dev mode)"
+    echo "  ./faultmaven status                   # Check health of all services"
+    echo "  ./faultmaven logs fm-agent-service    # View agent service logs"
+    echo "  ./faultmaven logs --tail 100          # View last 100 lines from all services"
+    echo "  ./faultmaven --no-color status        # Status without colors (for CI)"
     echo ""
     echo "Development Mode:"
     echo "  Automatically enabled when ALL 10 required repositories are present:"
@@ -998,13 +1075,55 @@ cmd_help() {
 # Parse flags and extract command + args
 COMMAND=""
 ARGS=()
-for arg in "$@"; do
+SKIP_NEXT=false
+for i in $(seq 1 $#); do
+    if [ "$SKIP_NEXT" = true ]; then
+        SKIP_NEXT=false
+        continue
+    fi
+
+    arg="${!i}"
+    next_i=$((i + 1))
+    next_arg="${!next_i:-}"
+
     case $arg in
         --use-prod-images)
             USE_PROD_IMAGES=true
             ;;
+        --no-color)
+            NO_COLOR=true
+            # Disable colors
+            RED=''
+            GREEN=''
+            YELLOW=''
+            BLUE=''
+            CYAN=''
+            NC=''
+            ;;
+        --tail)
+            if [ -n "$next_arg" ] && [[ "$next_arg" =~ ^[0-9]+$ ]]; then
+                TAIL_LINES="$next_arg"
+                SKIP_NEXT=true
+            else
+                echo "Error: --tail requires a numeric argument"
+                exit 1
+            fi
+            ;;
+        --tail=*)
+            TAIL_LINES="${arg#*=}"
+            if ! [[ "$TAIL_LINES" =~ ^[0-9]+$ ]]; then
+                echo "Error: --tail requires a numeric argument"
+                exit 1
+            fi
+            ;;
+        -h|--help)
+            # Allow -h and --help to work as command
+            if [ -z "$COMMAND" ]; then
+                COMMAND="help"
+            fi
+            ;;
         -*)
-            # Unknown flag, ignore for now
+            echo "Warning: Unknown flag '$arg' (ignored)"
             ;;
         *)
             # Non-flag arguments
@@ -1031,6 +1150,9 @@ case "${COMMAND:-}" in
     stop)
         cmd_stop
         ;;
+    restart)
+        cmd_restart "${ARGS[0]:-}"
+        ;;
     status)
         cmd_status
         ;;
@@ -1051,6 +1173,9 @@ case "${COMMAND:-}" in
         ;;
     clean)
         cmd_clean
+        ;;
+    version|--version|-v)
+        cmd_version
         ;;
     help|--help|-h|"")
         cmd_help
