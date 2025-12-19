@@ -19,7 +19,7 @@ This repository provides a complete Docker Compose deployment for self-hosting *
 - **[Product Overview](https://faultmaven.ai/product)** — See what FaultMaven can do
 - **[Use Cases](https://faultmaven.ai/use-cases)** — Real-world troubleshooting scenarios
 - **[Roadmap](https://faultmaven.ai/roadmap)** — What we're building next
-- **[Beta Founders Program](https://faultmaven.ai/founders)** — Get free Enterprise Cloud access
+- **[Beta Founders Program](https://faultmaven.ai/founders)** — Get free FaultMaven Enterprise access
 
 **What you get with FaultMaven Core deployment:**
 
@@ -52,7 +52,7 @@ Your monitoring tools show **what** broke. Generic LLMs guess **why**, but can't
 - 🔐 **Privacy-Conscious Teams** - Keep sensitive data on-premises in air-gapped environments
 - 🌍 **Open-Source Contributors** - Improve the product, add features, learn AI troubleshooting
 
-**Need team collaboration, SSO, or case sharing?** Check out [Enterprise Cloud](https://faultmaven.ai/founders) — free during private beta.
+**Need team collaboration, SSO, or case sharing?** Check out [FaultMaven Enterprise](https://faultmaven.ai/founders) — free during private beta.
 
 ---
 
@@ -492,7 +492,7 @@ docker-compose up -d
 
 ## 🚀 Need Team Collaboration?
 
-> **Self-hosted is designed for individual engineers.** Need team collaboration, SSO, or shared knowledge bases? Check out **[FaultMaven Enterprise Cloud](https://faultmaven.ai/founders)** — available **for free** during private beta through our Beta Founders Program.
+> **Self-hosted is designed for individual engineers.** Need team collaboration, SSO, or shared knowledge bases? Check out **[FaultMaven Enterprise](https://faultmaven.ai/founders)** — available **for free** during private beta through our Beta Founders Program.
 >
 > Get elastic resource management, optimized performance, and enterprise-grade features. **[Join Beta Founders Program →](https://faultmaven.ai/founders)**
 
