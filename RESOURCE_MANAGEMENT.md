@@ -1,12 +1,12 @@
-# Resource Management: Self-Hosted vs Cloud K8s
+# Resource Management: FaultMaven Core vs Cloud K8s
 
-This document explains how Docker Compose resource limits work for self-hosted deployment compared to Kubernetes in the cloud, and what happens when resources are exhausted.
+This document explains how Docker Compose resource limits work for FaultMaven Core deployment compared to Kubernetes in the cloud, and what happens when resources are exhausted.
 
 ---
 
 ## Configuration Comparison
 
-### Self-Hosted Docker Compose
+### FaultMaven Core Docker Compose
 
 **File:** `docker-compose.override.yml`
 
@@ -62,7 +62,7 @@ spec:
 
 ## Resource Footprint Breakdown
 
-### Self-Hosted (8GB Laptop)
+### FaultMaven Core (8GB Laptop)
 
 | Service | CPU Limit | Memory Limit | Memory Reserved | Notes |
 |---------|-----------|--------------|-----------------|-------|
@@ -110,7 +110,7 @@ spec:
 
 ## What Happens When Resources Are Exhausted?
 
-### Memory Limit Exceeded (Self-Hosted)
+### Memory Limit Exceeded (FaultMaven Core)
 
 #### Stage 1: Soft Pressure (90-95% usage)
 
@@ -170,7 +170,7 @@ $ docker inspect fm-agent-service | grep OOMKilled
 
 ---
 
-### CPU Limit Exceeded (Self-Hosted)
+### CPU Limit Exceeded (FaultMaven Core)
 
 #### When CPU hits limit:
 
@@ -203,7 +203,7 @@ embeddings = generate_embeddings(docs)  # 10 seconds (5x slower)
 
 ---
 
-### System-Wide Memory Exhaustion (Self-Hosted)
+### System-Wide Memory Exhaustion (FaultMaven Core)
 
 #### Cascade failure scenario:
 
@@ -298,8 +298,8 @@ worker-3       40%    55%
 
 ## Failure Mode Comparison
 
-| Scenario | Self-Hosted (Docker) | Cloud K8s |
-|----------|---------------------|-----------|
+| Scenario | FaultMaven Core (Docker) | Cloud K8s |
+|----------|--------------------------|-----------|
 | **Single container OOM** | ❌ 10-30s downtime, request fails | ✅ Zero downtime, other replicas serve |
 | **CPU throttling** | ⚠️ Slow but functional | ⚠️ Slow but functional |
 | **Node/host failure** | ❌ Total outage | ✅ Pods migrate to other nodes |
@@ -312,7 +312,7 @@ worker-3       40%    55%
 
 ## Monitoring Resource Usage
 
-### Self-Hosted
+### FaultMaven Core
 
 **Check real-time usage:**
 ```bash
@@ -386,7 +386,7 @@ $ kubectl get events --sort-by='.lastTimestamp'
 
 ## Best Practices
 
-### Self-Hosted
+### FaultMaven Core
 
 1. **Always use resource limits**
    - Copy `docker-compose.override.yml.example`
@@ -462,7 +462,7 @@ $ kubectl get events --sort-by='.lastTimestamp'
 
 ## Summary
 
-**Self-Hosted:**
+**FaultMaven Core:**
 - **Footprint:** 6-8GB RAM, designed for 8GB+ laptops
 - **Limits:** Hard caps prevent system OOM
 - **Failure mode:** Container restart, 10-30s recovery
@@ -475,7 +475,7 @@ $ kubectl get events --sort-by='.lastTimestamp'
 - **Scaling:** HPA + Cluster Autoscaler
 
 **Key Takeaway:**
-- Self-hosted prioritizes **resource efficiency** and **predictability**
+- FaultMaven Core prioritizes **resource efficiency** and **predictability**
 - Cloud K8s prioritizes **high availability** and **scalability**
-- Resource limits are **critical** for self-hosted to prevent laptop freeze
+- Resource limits are **critical** for FaultMaven Core to prevent laptop freeze
 - Cloud handles failures **gracefully** with redundancy and auto-healing

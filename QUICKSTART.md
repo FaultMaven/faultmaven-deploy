@@ -1,4 +1,4 @@
-# FaultMaven Self-Hosted - Quick Start Guide
+# FaultMaven Core - Quick Start Guide
 
 **Get FaultMaven running on your laptop in under 5 minutes.**
 
@@ -139,7 +139,7 @@ OPENAI_API_KEY=sk-your-actual-key-here
 # FIREWORKS_API_KEY=fw_...
 
 # =============================================================================
-# Authentication (Self-Hosted)
+# Authentication (FaultMaven Core)
 # =============================================================================
 # IMPORTANT: Change these default credentials!
 DASHBOARD_USERNAME=admin
@@ -217,7 +217,7 @@ SYNTHESIS_MODEL=llama3.1
 
 **⚠️ Security Note:** The default credentials (`admin`/`changeme123`) are for initial setup only. Change them before deploying anywhere accessible beyond localhost!
 
-**Development Mode:** The auth service runs in simplified "development mode" for self-hosted deployments. While the login page may show "any username works", you should still use the configured `admin` account for consistency and to prepare for future security updates.
+**Development Mode:** The auth service runs in simplified "development mode" for FaultMaven Core deployments. While the login page may show "any username works", you should still use the configured `admin` account for consistency and to prepare for future security updates.
 
 ### Step 3: Protect - Resource Limits
 
@@ -267,7 +267,7 @@ Password: changeme123
 **⚠️ IMPORTANT:** Change your password immediately after first login! The default credentials are only for initial setup.
 
 **Network Access Note:**
-- Most self-hosted servers run **headless** (no GUI browser)
+- Most FaultMaven Core servers run **headless** (no GUI browser)
 - Access the dashboard from **any device** on your network
 - The SERVER_HOST in .env tells the dashboard where to find the backend services
 - Works across your local network, VPN, or firewall zone
@@ -335,7 +335,7 @@ The wrapper script simplifies all operations:
 Expected output:
 ```
 ╔════════════════════════════════════════╗
-║  FaultMaven Self-Hosted Manager      ║
+║  FaultMaven Core Manager      ║
 ╚════════════════════════════════════════╝
 
 Service Status:
@@ -507,7 +507,7 @@ ports:
 
 ## What's Included vs. What's Not
 
-### ✅ Self-Hosted Includes
+### ✅ FaultMaven Core Includes
 
 - **Complete AI Agent** - Full LangGraph agent with 8 milestones
 - **3-Tier RAG System** - Personal KB + Global KB + Case Working Memory

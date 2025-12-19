@@ -1,4 +1,4 @@
-# FaultMaven - Self-Hosted Deployment
+# FaultMaven - Deployment (FaultMaven Core)
 
 > **Part of [FaultMaven](https://github.com/FaultMaven/faultmaven)** —
 > The AI-Powered Troubleshooting Copilot
@@ -21,7 +21,7 @@ This repository provides a complete Docker Compose deployment for self-hosting *
 - **[Roadmap](https://faultmaven.ai/roadmap)** — What we're building next
 - **[Beta Founders Program](https://faultmaven.ai/founders)** — Get free Enterprise Cloud access
 
-**What you get with self-hosted deployment:**
+**What you get with FaultMaven Core deployment:**
 
 - 🤖 **AI Troubleshooting Agent** - LangGraph-powered assistant with milestone-based investigation
 - 📚 **3-Tier Knowledge Base** - Personal KB + Global KB + Case Working Memory
@@ -45,7 +45,7 @@ Your monitoring tools show **what** broke. Generic LLMs guess **why**, but can't
 
 ## Who Is This For?
 
-**✅ Self-Hosted is perfect for:**
+**✅ FaultMaven Core is perfect for:**
 
 - 👨‍💻 **Individual Engineers** - Personal troubleshooting assistant with your own knowledge base
 - 🔬 **Developers & Tinkerers** - Study architecture, experiment with LLMs, RAG, and agentic workflows

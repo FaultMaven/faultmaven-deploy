@@ -2,7 +2,7 @@
 
 ## Why This Is Needed
 
-The FaultMaven self-hosted deployment now pulls pre-built Docker images from GitHub Container Registry (GHCR). To provide a zero-friction user experience, these packages need to be public so users don't need to authenticate.
+The FaultMaven Core deployment now pulls pre-built Docker images from GitHub Container Registry (GHCR). To provide a zero-friction user experience, these packages need to be public so users don't need to authenticate.
 
 ## Option 1: Automated Script (Recommended)
 

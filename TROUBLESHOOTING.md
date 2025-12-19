@@ -1,4 +1,4 @@
-# FaultMaven Self-Hosted - Troubleshooting Guide
+# FaultMaven Core - Troubleshooting Guide
 
 ## Dashboard Login Issues
 

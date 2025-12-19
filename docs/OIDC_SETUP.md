@@ -44,7 +44,7 @@ AUTH_PROVIDER=saml
 
 ## Deployment Neutrality
 
-FaultMaven uses **deployment-neutral authentication** — the same codebase supports both self-hosted (Docker Compose) and enterprise cloud (Kubernetes) environments.
+FaultMaven uses **deployment-neutral authentication** — the same codebase supports both FaultMaven Core (Docker Compose) and enterprise cloud (Kubernetes) environments.
 
 ### How It Works
 

@@ -2,7 +2,7 @@
 
 ## What Was Done
 
-Implemented **Option A: Make GHCR Packages Public** to provide zero-friction user experience for FaultMaven self-hosted deployments.
+Implemented **Option A: Make GHCR Packages Public** to provide zero-friction user experience for FaultMaven Core deployments.
 
 ### Changes Committed
 
